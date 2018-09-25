@@ -1,0 +1,10 @@
+# mac OS
+*.DS_Store
+
+# c
+*.o
+*.a
+*.so
+
+# project
+mtnf_mgr/target
