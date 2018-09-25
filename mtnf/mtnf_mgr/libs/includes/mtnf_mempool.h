@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <rte_mempool.h>
 
+#define MBUF_POOL_CACHE_SIZE 256
+
 /* init the mempool for pktmbuf */
 struct rte_mempool *
 init_pktmbuf_pool(const char *pktmbuf_pool_name, uint32_t num_mbufs);

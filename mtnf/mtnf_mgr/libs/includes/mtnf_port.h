@@ -5,6 +5,18 @@
 #include <rte_mempool.h>
 #include <rte_ether.h>
 
+#define RX_QUEUE 1
+#define TX_QUEUE 1
+
+#define RX_DESC_PER_QUEUE 1024
+#define TX_DESC_PER_QUEUE 1024
+
+#define HW_RXCSUM 0
+#define HW_TXCSUM 0
+
+#define CHECK_INTERVAL 100 /* 100ms */
+#define MAX_CHECK_TIME 90 /* 9s (90 * 100ms) in total */
+
 struct ports_info {
         uint8_t num_ports;
         uint8_t id[RTE_MAX_ETHPORTS];	/* the virtual port id to physical port id */

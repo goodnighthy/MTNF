@@ -10,19 +10,6 @@
 #include "mtnf_port.h"
 #include "mtnf_memzone.h"
 
-
-#define RX_QUEUE 1
-#define TX_QUEUE 1
-
-#define RX_DESC_PER_QUEUE 1024
-#define TX_DESC_PER_QUEUE 1024
-
-#define HW_RXCSUM 0
-#define HW_TXCSUM 0
-
-#define CHECK_INTERVAL 100 /* 100ms */
-#define MAX_CHECK_TIME 90 /* 9s (90 * 100ms) in total */
-
 static const struct rte_eth_conf default_eth_conf = {
     .link_speeds = ETH_LINK_SPEED_AUTONEG, /* auto negotiate speed */
     .lpbk_mode = 0,
