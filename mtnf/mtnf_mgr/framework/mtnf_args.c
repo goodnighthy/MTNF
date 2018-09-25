@@ -9,6 +9,7 @@
 /********************************Global variables*********************************/
 /* postmask of the devices */
 uint32_t port_mask;
+uint32_t port_number;
 
 /* time period of print statistics */
 uint64_t timer_period = 3; /* default period is 3 seconds */
@@ -42,6 +43,14 @@ mtnf_parse_portmask(const char *portmask) {
         }
         if ((portmask[0] == '\0') || (end == NULL) || (*end != '\0'))
                 return -1;
+
+        /* loop through bits of the mask and mark ports */
+        while (pm != 0) {
+                if (pm & 0x01) { /* bit is set in mask, use port */
+                        port_number++;
+                }
+                pm = (pm >> 1);
+        }
 
         return pm;
 }

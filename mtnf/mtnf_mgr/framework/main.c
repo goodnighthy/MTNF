@@ -6,12 +6,6 @@
 #include <rte_launch.h>
 #include <rte_log.h>
 
-#include "mtnf_args.h"
-#include "mtnf_help.h"
-#include "mtnf_mempool.h"
-#include "mtnf_memzone.h"
-#include "mtnf_port.h"
-
 #define RTE_LOGTYPE_MTNF          RTE_LOGTYPE_USER1
 #define MAX_PKT_BURST 32
 #define BUFFER_SIZE 128
@@ -25,4 +19,23 @@ handle_signal(int sig) {
         if (sig == SIGINT || sig == SIGTERM) {
                 keep_running = 0;
         }
+}
+
+static int
+worker_thread(void *arg) {
+
+
+}
+
+static int
+master_thread(void *arg) {
+
+}
+
+int
+main(int argc, char *argv[]) {
+	unsigned cur_lcore, worker_lcores;
+	unsigned i;
+
+
 }
