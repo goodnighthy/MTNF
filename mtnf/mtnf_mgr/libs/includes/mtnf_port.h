@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <rte_mempool.h>
+#include <rte_ether.h>
 
 struct ports_info {
         uint8_t num_ports;
@@ -16,8 +17,8 @@ struct ports_info {
 };
 
 /* Init all ports */
-void
-init_all_ports(const char* ports_info_name, uint32_t port_mask, struct rte_mempool *mbuf_pool);
+struct ports_info *
+init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempool *mbuf_pool);
 
 /* Check the link status of all ports in up to 9s, and print them finally */
 void 

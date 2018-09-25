@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include <rte_ethdev.h>
 #include <rte_mempool.h>
@@ -7,6 +8,7 @@
 #include <rte_ether.h>
 
 #include "mtnf_port.h"
+#include "mtnf_memzone.h"
 
 
 #define RX_QUEUE 1
@@ -147,20 +149,21 @@ print_MAC(uint8_t port) {
 /**********************************Interface*************************************/
 
 /* Init all ports */
-void
-init_all_ports(const char* ports_info_name, uint32_t port_mask, struct rte_mempool *mbuf_pool) 
+struct ports_info *
+init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempool *mbuf_pool) 
 {
 	int retval;
 	uint8_t port_id, total_ports;
     struct ports_info *local_ports_info;
-    const struct rte_memzone *mz_ports;
+    // const struct rte_memzone *mz_ports;
 
-    /* set up ports info */
-    mz_ports = rte_memzone_reserve(ports_info_name, sizeof(*local_ports_info),
-                                    rte_socket_id(), NO_FLAGS);
-    if (mz_port == NULL)
-        rte_exit(EXIT_FAILURE, "Cannot reserve memory zone for port information\n");
-    local_ports_info = mz_ports->addr;
+    // /* set up ports info */
+    // mz_ports = rte_memzone_reserve(ports_info_name, sizeof(*local_ports_info),
+    //                                 rte_socket_id(), NO_FLAGS);
+    // if (mz_port == NULL)
+    //     rte_exit(EXIT_FAILURE, "Cannot reserve memory zone for port information\n");
+    // local_ports_info = mz_ports->addr;
+    local_ports_info = memzone_reserve(ports_info_name, sizeof(*local_ports_info), 1);
 
     total_ports = rte_eth_dev_count();
     local_ports_info.num_ports = 0;
@@ -176,7 +179,7 @@ init_all_ports(const char* ports_info_name, uint32_t port_mask, struct rte_mempo
         	rte_exit(EXIT_FAILURE, "Cannot init port %u\n", port_id);
 
         local_ports_info.id[local_ports_info.num_ports] = port_id;
-        rte_eth_macaddr_get(port_id, &local_ports_info.mac[local_port_info.num_ports]);
+        rte_eth_macaddr_get(port_id, &local_ports_info.mac[local_ports_info.num_ports]);
         printf("Port %u MAC: %02"PRIx8" %02"PRIx8" %02"PRIx8
                " %02"PRIx8" %02"PRIx8" %02"PRIx8"\n",
         port_id,
@@ -193,7 +196,7 @@ init_all_ports(const char* ports_info_name, uint32_t port_mask, struct rte_mempo
         local_ports_info.num_ports++;
 
     }
-    return &local_ports_info;
+    return local_ports_info;
 
 }
 

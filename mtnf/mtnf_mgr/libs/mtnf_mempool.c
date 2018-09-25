@@ -9,8 +9,8 @@
 #define MBUF_POOL_CACHE_SIZE 256
 
 /* init the mempool for pktmbuf */
-void 
-init_pktmbuf_pool(const char* pktmbuf_pool_name, uint32_t num_mbufs) 
+struct rte_mempool *
+init_pktmbuf_pool(const char *pktmbuf_pool_name,uint32_t num_mbufs) 
 {
 	struct rte_mempool *pktmbuf_pool;
 
@@ -23,6 +23,8 @@ init_pktmbuf_pool(const char* pktmbuf_pool_name, uint32_t num_mbufs)
     if (pktmbuf_pool == NULL) {
         rte_exit(EXIT_FAILURE, "%s\n", rte_strerror(rte_errno));
     }
+
+    return pktmbuf_pool;
 }
 
 /* free a bulk of pktmbuf */

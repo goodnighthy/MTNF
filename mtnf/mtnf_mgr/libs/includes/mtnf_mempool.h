@@ -5,8 +5,8 @@
 #include <rte_mempool.h>
 
 /* init the mempool for pktmbuf */
-void
-init_pktmbuf_pool(const char* pktmbuf_pool_name, uint32_t num_mbufs);
+struct rte_mempool *
+init_pktmbuf_pool(const char *pktmbuf_pool_name, uint32_t num_mbufs);
 
 /* free a bulk of pktmbuf */
 void 
