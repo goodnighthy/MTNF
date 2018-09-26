@@ -175,9 +175,9 @@ init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempo
         local_ports_info.mac[local_ports_info.num_ports].addr_bytes[4], 
         local_ports_info.mac[local_ports_info.num_ports].addr_bytes[5]);
         
-        local_ports_info.ports[local_ports_info.num_ports].rx = 0;
-        local_ports_info.ports[local_ports_info.num_ports].tx = 0;
-        local_ports_info.ports[local_ports_info.num_ports].tx_drop = 0;
+        local_ports_info.stats[local_ports_info.num_ports].rx = 0;
+        local_ports_info.stats[local_ports_info.num_ports].tx = 0;
+        local_ports_info.stats[local_ports_info.num_ports].tx_drop = 0;
         local_ports_info.num_ports++;
 
     }

@@ -3,9 +3,11 @@
 #include <signal.h>
 
 #include <rte_mbuf.h>
+#include <rte_ethdev.h>
 #include <rte_lcore.h>
 #include <rte_launch.h>
 #include <rte_log.h>
+#include <rte_branch_prediction.h>
 
 #include "mtnf_init.h"
 #include "mtnf_stats.h"
@@ -27,8 +29,29 @@ handle_signal(int sig) {
 
 static int
 worker_thread(void *arg) {
+	uint8_t port_id, nb_rx, nb_tx;
+	struct rte_mbuf *pkts[PACKET_READ_SIZE];
+	struct worker_info *worker_info = (struct worker_info)arg;
 
+	port_id = ports->id[worker_info->id];
 
+	RTE_LOG(INFO, APP, "Core %d: Running worker thread\n", rte_lcore_id());
+
+	for (; keep_running;) {
+		nb_rx = rte_eth_rx_burst(port_id, 0, pkts, MAX_PKT_BURST);
+		ports->stats[port_id].rx += nb_rx;
+
+		nb_tx = rte_eth_tx_burst(port_id, 0, pkts, nb_rx);
+		if (unlikely(nb_tx < nb_rx)) {
+			pktmbuf_free_bulk(&pkts[nb_tx], nb_rx - nb_tx);
+			ports->stats[port_id].tx_drop += (nb_rx - nb_tx);
+		}
+		ports->stats[port_id].tx += nb_tx;
+	}
+
+	RTE_LOG(INFO, APP, "Core %d: worker thread done\n", rte_lcore_id());
+
+	return 0;
 }
 
 static int
@@ -46,6 +69,8 @@ master_thread(void) {
     }
 
     RTE_LOG(INFO, APP, "Core %d: Master thread done\n", rte_lcore_id());
+
+    return 0;
 }
 
 int
@@ -82,5 +107,6 @@ main(int argc, char *argv[]) {
 
     /* Master thread handles statistics and NF management */
     master_thread();
+    
     return 0;
 }

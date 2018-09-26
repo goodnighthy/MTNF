@@ -13,6 +13,8 @@
 /* default period is 3 seconds */
 #define TIMER_PERIOD 3
 
+#define PACKET_READ_SIZE 32
+
 /* define common names for structures */
 #define PKTMBUF_POOL_NAME "mtnf_pktmbuf_pool"
 #define MTNF_PORT_INFO "mtnf_port_info"

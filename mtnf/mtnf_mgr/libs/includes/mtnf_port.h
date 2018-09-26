@@ -25,7 +25,7 @@ struct ports_info {
         	uint64_t rx;
         	uint64_t tx;
         	uint64_t tx_drop;
-        } ports[RTE_MAX_ETHPORTS] __rte_cache_aligned;
+        } stats[RTE_MAX_ETHPORTS] __rte_cache_aligned;
 };
 
 /* Init all ports */
