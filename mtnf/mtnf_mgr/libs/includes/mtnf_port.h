@@ -38,6 +38,6 @@ check_all_ports_link_status(uint32_t port_mask);
 
 /* display the statistics of all ports */
 void 
-display_ports(unsigned difftime, struct ports_info *portsinfo);
+mtnf_stats_display_ports(unsigned difftime, struct ports_info *portsinfo);
 
 #endif

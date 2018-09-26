@@ -8,8 +8,7 @@
 
 /* init the mempool for pktmbuf */
 struct rte_mempool *
-init_pktmbuf_pool(const char *pktmbuf_pool_name,uint32_t num_mbufs) 
-{
+init_pktmbuf_pool(const char *pktmbuf_pool_name,uint32_t num_mbufs) {
 	struct rte_mempool *pktmbuf_pool;
 
 
@@ -27,8 +26,7 @@ init_pktmbuf_pool(const char *pktmbuf_pool_name,uint32_t num_mbufs)
 
 /* free a bulk of pktmbuf */
 void 
-pktmbuf_free_bulk(struct rte_mbuf *pktmbuf[], unsigned n)
-{
+pktmbuf_free_bulk(struct rte_mbuf *pktmbuf[], unsigned n) {
     unsigned int i;
 
     for (i = 0; i < n; i++)

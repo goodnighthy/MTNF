@@ -51,8 +51,7 @@ static const struct rte_eth_conf default_eth_conf = {
 
 /* Init a single port */
 static int 
-init_single_port(struct rte_mempool *mbuf_pool, uint8_t port_id) 
-{
+init_single_port(struct rte_mempool *mbuf_pool, uint8_t port_id) {
 	const uint16_t rxRings = RX_QUEUE, txRings = TX_QUEUE;
     const uint16_t nb_rxd = RX_RING_SIZE;
     const uint16_t nb_txd = TX_RING_SIZE;
@@ -116,29 +115,28 @@ init_single_port(struct rte_mempool *mbuf_pool, uint8_t port_id)
 
 static const char *
 print_MAC(uint8_t port) {
-        static const char err_address[] = "00:00:00:00:00:00";
-        static char addresses[RTE_MAX_ETHPORTS][sizeof(err_address)];
+    static const char err_address[] = "00:00:00:00:00:00";
+    static char addresses[RTE_MAX_ETHPORTS][sizeof(err_address)];
 
-        if (unlikely(port >= RTE_MAX_ETHPORTS))
-                return err_address;
-        if (unlikely(addresses[port][0] == '\0')) {
-                struct ether_addr mac;
-                rte_eth_macaddr_get(port, &mac);
-                snprintf(addresses[port], sizeof(addresses[port]),
-                                "%02x:%02x:%02x:%02x:%02x:%02x\n",
-                                mac.addr_bytes[0], mac.addr_bytes[1],
-                                mac.addr_bytes[2], mac.addr_bytes[3],
-                                mac.addr_bytes[4], mac.addr_bytes[5]);
-        }
-        return addresses[port];
+    if (unlikely(port >= RTE_MAX_ETHPORTS))
+        return err_address;
+    if (unlikely(addresses[port][0] == '\0')) {
+        struct ether_addr mac;
+        rte_eth_macaddr_get(port, &mac);
+        snprintf(addresses[port], sizeof(addresses[port]),
+                        "%02x:%02x:%02x:%02x:%02x:%02x\n",
+                        mac.addr_bytes[0], mac.addr_bytes[1],
+                        mac.addr_bytes[2], mac.addr_bytes[3],
+                        mac.addr_bytes[4], mac.addr_bytes[5]);
+    }
+    return addresses[port];
 }
 
 /**********************************Interface*************************************/
 
 /* Init all ports */
 struct ports_info *
-init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempool *mbuf_pool) 
-{
+init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempool *mbuf_pool) {
 	int retval;
 	uint8_t port_id, total_ports;
     struct ports_info *local_ports_info;
@@ -189,8 +187,7 @@ init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempo
 
 /* Check the link status of all ports in up to 9s, and print them finally */
 void 
-check_all_ports_link_status(uint32_t port_mask)
-{
+check_all_ports_link_status(uint32_t port_mask) {
 	uint8_t portid, total_ports;
 	uint8_t count, all_ports_up, print_flag = 0;
 	struct rte_eth_link link;
@@ -240,8 +237,7 @@ check_all_ports_link_status(uint32_t port_mask)
 
 /* display the statistics of all ports */
 void 
-display_ports(unsigned difftime, struct ports_info *portsinfo) 
-{
+mtnf_stats_display_ports(unsigned difftime, struct ports_info *portsinfo) {
         unsigned i;
         /* Arrays to store last TX/RX count to calculate rate */
         static uint64_t rx_last[RTE_MAX_ETHPORTS];

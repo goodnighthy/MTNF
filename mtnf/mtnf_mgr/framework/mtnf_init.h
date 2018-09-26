@@ -7,13 +7,12 @@
 #include "mtnf_memzone.h"
 #include "mtnf_port.h"
 
-#define MBUFS_PER_PORT 2048
-#define MBUFS_PER_TENANT 256
 
 /*************************External global variables***************************/
 /* postmask of the devices */
 extern uint32_t port_mask;
 extern uint32_t port_number;
+extern uint32_t tenant_number;
 
 
 /**********************************Functions**********************************/
