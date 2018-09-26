@@ -1,5 +1,4 @@
 #include "mtnf_port.h"
-#include "mtnf_memzone.h"
 
 static const struct rte_eth_conf default_eth_conf = {
     .link_speeds = ETH_LINK_SPEED_AUTONEG, /* auto negotiate speed */
@@ -42,7 +41,7 @@ static const struct rte_eth_conf default_eth_conf = {
 
 /* Init a single port */
 static int 
-init_single_port(struct rte_mempool *mbuf_pool, uint8_t port_id) {
+init_single_port(uint8_t port_id, struct rte_mempool *mbuf_pool) {
 	const uint16_t rxRings = RX_QUEUE, txRings = TX_QUEUE;
     uint16_t nb_rxd = RX_DESC_PER_QUEUE;
     uint16_t nb_txd = TX_DESC_PER_QUEUE;
@@ -104,45 +103,15 @@ init_single_port(struct rte_mempool *mbuf_pool, uint8_t port_id) {
     return 0;
 }
 
-static const char *
-print_MAC(uint8_t port) {
-    static const char err_address[] = "00:00:00:00:00:00";
-    static char addresses[RTE_MAX_ETHPORTS][sizeof(err_address)];
-
-    if (unlikely(port >= RTE_MAX_ETHPORTS))
-        return err_address;
-    if (unlikely(addresses[port][0] == '\0')) {
-        struct ether_addr mac;
-        rte_eth_macaddr_get(port, &mac);
-        snprintf(addresses[port], sizeof(addresses[port]),
-                        "%02x:%02x:%02x:%02x:%02x:%02x\n",
-                        mac.addr_bytes[0], mac.addr_bytes[1],
-                        mac.addr_bytes[2], mac.addr_bytes[3],
-                        mac.addr_bytes[4], mac.addr_bytes[5]);
-    }
-    return addresses[port];
-}
-
 /**********************************Interface*************************************/
 
 /* Init all ports */
-struct ports_info *
-init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempool *mbuf_pool) {
+int
+init_all_ports(uint32_t port_mask, struct rte_mempool *mbuf_pool) {
 	int retval;
 	uint8_t port_id, total_ports;
-    struct ports_info *local_ports_info;
-    // const struct rte_memzone *mz_ports;
-
-    // /* set up ports info */
-    // mz_ports = rte_memzone_reserve(ports_info_name, sizeof(*local_ports_info),
-    //                                 rte_socket_id(), NO_FLAGS);
-    // if (mz_port == NULL)
-    //     rte_exit(EXIT_FAILURE, "Cannot reserve memory zone for port information\n");
-    // local_ports_info = mz_ports->addr;
-    local_ports_info = memzone_reserve(ports_info_name, sizeof(*local_ports_info), 1);
 
     total_ports = rte_eth_dev_count();
-    local_ports_info->num_ports = 0;
     for (port_id = 0; port_id < total_ports; port_id++) {
         /* skip ports that are not enabled */
         if ((port_mask & (1 << port_id)) == 0) {
@@ -150,30 +119,12 @@ init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempo
             continue;
         }
         /* init port */
-        retval = init_single_port(mbuf_pool, port_id);
+        retval = init_single_port(port_id, mbuf_pool);
         if (retval != 0)
         	rte_exit(EXIT_FAILURE, "Cannot init port %u\n", port_id);
-
-        local_ports_info->id[local_ports_info->num_ports] = port_id;
-        rte_eth_macaddr_get(port_id, &local_ports_info->mac[local_ports_info->num_ports]);
-        printf("Port %u MAC: %02"PRIx8" %02"PRIx8" %02"PRIx8
-               " %02"PRIx8" %02"PRIx8" %02"PRIx8"\n",
-        port_id,
-        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[0], 
-        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[1],
-        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[2], 
-        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[3],
-        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[4], 
-        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[5]);
-        
-        local_ports_info->stats[local_ports_info->num_ports].rx = 0;
-        local_ports_info->stats[local_ports_info->num_ports].tx = 0;
-        local_ports_info->stats[local_ports_info->num_ports].tx_drop = 0;
-        local_ports_info->num_ports++;
-
     }
-    return local_ports_info;
 
+    return 0;
 }
 
 /* Check the link status of all ports in up to 9s, and print them finally */
@@ -224,40 +175,4 @@ check_all_ports_link_status(uint32_t port_mask) {
 			printf("done\n");
 		}
 	}
-}
-
-/* display the statistics of all ports */
-void 
-mtnf_stats_display_ports(unsigned difftime, struct ports_info *portsinfo) {
-        unsigned i;
-        /* Arrays to store last TX/RX count to calculate rate */
-        static uint64_t rx_last[RTE_MAX_ETHPORTS];
-        static uint64_t tx_last[RTE_MAX_ETHPORTS];
-        static uint64_t tx_drop_last[RTE_MAX_ETHPORTS];
-
-        printf("PORTS\n");
-        printf("-----\n");
-        for (i = 0; i < portsinfo->num_ports; i++)
-                printf("Port %u: '%s'\t", (unsigned)portsinfo->id[i],
-                                print_MAC(portsinfo->id[i]));
-        printf("\n\n");
-        for (i = 0; i < portsinfo->num_ports; i++) {
-                printf("Port %u - rx: %9"PRIu64"  (%9"PRIu64" pps)\t"
-                                "tx: %9"PRIu64"  (%9"PRIu64" pps)\t"
-                                "tx_drop: %9"PRIu64"  (%9"PRIu64" pps)\n\n",
-                                (unsigned)portsinfo->id[i],
-                                portsinfo->stats[portsinfo->id[i]].rx,
-                                (portsinfo->stats[portsinfo->id[i]].rx - rx_last[i])
-                                        /difftime,
-                                portsinfo->stats[portsinfo->id[i]].tx,
-                                (portsinfo->stats[portsinfo->id[i]].tx - tx_last[i])
-                                        /difftime,
-                                portsinfo->stats[portsinfo->id[i]].tx_drop,
-                                (portsinfo->stats[portsinfo->id[i]].tx_drop - tx_drop_last[i])
-                                        /difftime);
-
-                rx_last[i] = portsinfo->stats[portsinfo->id[i]].rx;
-                tx_last[i] = portsinfo->stats[portsinfo->id[i]].tx;
-                tx_drop_last[i] = portsinfo->stats[portsinfo->id[i]].tx_drop;
-        }
 }

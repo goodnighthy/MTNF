@@ -1,9 +1,3 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <inttypes.h>
-
-#include "mtnf_port.h"
-
 /*******************************Internal Function*********************************/
 
 /*
@@ -52,6 +46,62 @@ mtnf_stats_display_tenants(unsigned difftime, struct tenant_info *tenantsinfo) {
         tx_last[i] = tenantsinfo[i].stats.tx;
         tx_drop_last[i] = tenantsinfo[i].stats.tx_drop;
     }
+}
+
+/* display MAC of port */
+static const char *
+print_MAC(uint8_t port) {
+    static const char err_address[] = "00:00:00:00:00:00";
+    static char addresses[RTE_MAX_ETHPORTS][sizeof(err_address)];
+
+    if (unlikely(port >= RTE_MAX_ETHPORTS))
+        return err_address;
+    if (unlikely(addresses[port][0] == '\0')) {
+        struct ether_addr mac;
+        rte_eth_macaddr_get(port, &mac);
+        snprintf(addresses[port], sizeof(addresses[port]),
+                        "%02x:%02x:%02x:%02x:%02x:%02x\n",
+                        mac.addr_bytes[0], mac.addr_bytes[1],
+                        mac.addr_bytes[2], mac.addr_bytes[3],
+                        mac.addr_bytes[4], mac.addr_bytes[5]);
+    }
+    return addresses[port];
+}
+
+/* display the statistics of all ports */
+void 
+mtnf_stats_display_ports(unsigned difftime, struct ports_info *portsinfo) {
+        unsigned i;
+        /* Arrays to store last TX/RX count to calculate rate */
+        static uint64_t rx_last[RTE_MAX_ETHPORTS];
+        static uint64_t tx_last[RTE_MAX_ETHPORTS];
+        static uint64_t tx_drop_last[RTE_MAX_ETHPORTS];
+
+        printf("PORTS\n");
+        printf("-----\n");
+        for (i = 0; i < portsinfo->num_ports; i++)
+                printf("Port %u: '%s'\t", (unsigned)portsinfo->id[i],
+                                print_MAC(portsinfo->id[i]));
+        printf("\n\n");
+        for (i = 0; i < portsinfo->num_ports; i++) {
+                printf("Port %u - rx: %9"PRIu64"  (%9"PRIu64" pps)\t"
+                                "tx: %9"PRIu64"  (%9"PRIu64" pps)\t"
+                                "tx_drop: %9"PRIu64"  (%9"PRIu64" pps)\n\n",
+                                (unsigned)portsinfo->id[i],
+                                portsinfo->stats[portsinfo->id[i]].rx,
+                                (portsinfo->stats[portsinfo->id[i]].rx - rx_last[i])
+                                        /difftime,
+                                portsinfo->stats[portsinfo->id[i]].tx,
+                                (portsinfo->stats[portsinfo->id[i]].tx - tx_last[i])
+                                        /difftime,
+                                portsinfo->stats[portsinfo->id[i]].tx_drop,
+                                (portsinfo->stats[portsinfo->id[i]].tx_drop - tx_drop_last[i])
+                                        /difftime);
+
+                rx_last[i] = portsinfo->stats[portsinfo->id[i]].rx;
+                tx_last[i] = portsinfo->stats[portsinfo->id[i]].tx;
+                tx_drop_last[i] = portsinfo->stats[portsinfo->id[i]].tx_drop;
+        }
 }
 
 /*******************************Interfaces***************************************/

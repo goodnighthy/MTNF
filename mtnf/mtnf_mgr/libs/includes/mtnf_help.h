@@ -1,11 +1,16 @@
 #ifndef _MTNF_HELP_H_
 #define _MTNF_HELP_H_
 
+#include <inttypes.h>
+
 #include <rte_mbuf.h>
+#include <rte_ethdev.h>
 #include <rte_ether.h>
 #include <rte_ip.h>
 #include <rte_tcp.h>
 #include <rte_udp.h>
+#include <rte_branch_prediction.h>
+
 
 #define IP_PROTOCOL_TCP 6
 #define IP_PROTOCOL_UDP 17

@@ -10,9 +10,9 @@
 
 /*************************External global variables***************************/
 /* postmask of the devices */
-extern uint32_t port_mask;
-extern uint32_t port_number;
-extern uint32_t tenant_number;
+struct tenant_info *tenants;
+struct ports_info *ports;
+struct rte_mempool *pktmbuf_pool;
 
 
 /**********************************Functions**********************************/

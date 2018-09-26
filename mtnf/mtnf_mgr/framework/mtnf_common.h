@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include <rte_mbuf.h>
+#include <rte_ether.h>
 
 #define MAX_TENANTS 32
 
@@ -26,6 +27,13 @@ struct worker_info
 	uint8_t id;
 };
 
+/* define a structure to buffer packets for each tenant */
+struct tenant_buffer
+{
+	struct rte_mbuf *buffer[MBUFS_PER_TENANT];
+	uint16_t count;
+};
+
 /* define a structure to describe a tenant */
 struct tenant_info
 {
@@ -38,10 +46,15 @@ struct tenant_info
     } stats;
 };
 
-struct tenant_buffer
-{
-	struct rte_mbuf *buffer[MBUFS_PER_TENANT];
-	uint16_t count;
-}
+struct ports_info {
+        uint8_t num_ports;
+        uint8_t id[RTE_MAX_ETHPORTS];	/* the virtual port id to physical port id */
+        struct ether_addr mac[RTE_MAX_ETHPORTS];
+        volatile struct {
+        	uint64_t rx;
+        	uint64_t tx;
+        	uint64_t tx_drop;
+        } stats[RTE_MAX_ETHPORTS] __rte_cache_aligned;
+};
 
 #endif

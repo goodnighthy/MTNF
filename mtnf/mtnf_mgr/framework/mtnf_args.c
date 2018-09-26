@@ -1,19 +1,4 @@
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#include <rte_ethdev.h>
-
 #include "mtnf_args.h"
-
-/********************************Global variables*********************************/
-/* postmask of the devices */
-uint32_t port_mask;
-uint32_t port_number;
-uint32_t tenant_number = MAX_TENANTS;
-
-/* time period of print statistics */
-uint64_t timer_period = TIMER_PERIOD; 
 
 /*******************************Internal functions*********************************/
 
@@ -32,6 +17,7 @@ static int
 mtnf_parse_portmask(const char *portmask) {
     char *end = NULL;
     uint32_t pm;
+    uint8_t count = 0;
 
     if (portmask == NULL)
         return -1;
@@ -47,10 +33,17 @@ mtnf_parse_portmask(const char *portmask) {
 
     /* loop through bits of the mask and mark ports */
     while (pm != 0) {
-        if (pm & 0x01) { /* bit is set in mask, use port */
-            port_number++;
+       if (pm & 0x01) { /* bit is set in mask, use port */
+            if (count >= rte_eth_dev_count())
+                printf("WARNING: requested port %u not present"
+                    " - ignoring\n", (unsigned)count);
+            else {
+                ports->id[ports->num_ports] = count;
+                rte_eth_macaddr_get(count, &ports->mac[ports->num_ports++]);
+            }
         }
         pm = (pm >> 1);
+        count++;
     }
 
     return pm;

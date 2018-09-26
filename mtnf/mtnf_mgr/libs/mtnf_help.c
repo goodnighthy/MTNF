@@ -1,8 +1,3 @@
-#include <inttypes.h>
-
-#include <rte_branch_prediction.h>
-#include <rte_ethdev.h>
-
 #include "mtnf_help.h"
 
 struct ether_hdr *
