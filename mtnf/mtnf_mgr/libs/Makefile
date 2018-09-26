@@ -80,7 +80,7 @@ $(PROD_STATIC): $(OBJS)
 clean:
 	rm -f $(DEPS) $(PROD) $(PROD_STATIC) *.o || true
 	rm -f $(INSTALL_PATH)/$(PROD) || true
-	rmdir $(INSTALL_PATH) || true
+	rm -rf $(INSTALL_PATH) || true
 
 tags:
 	@ctags -R *

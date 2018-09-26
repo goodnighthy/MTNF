@@ -1,14 +1,8 @@
-#include <stdint.h>
-#include <stdio.h>
-
-#include <rte_mempool.h>
-#include <rte_mbuf.h>
-
 #include "mtnf_mempool.h"
 
 /* init the mempool for pktmbuf */
 struct rte_mempool *
-init_pktmbuf_pool(const char *pktmbuf_pool_name,uint32_t num_mbufs) {
+init_pktmbuf_pool(const char *pktmbuf_pool_name, uint32_t num_mbufs) {
 	struct rte_mempool *pktmbuf_pool;
 
 

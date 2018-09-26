@@ -1,12 +1,3 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <inttypes.h>
-
-#include <rte_ethdev.h>
-#include <rte_mempool.h>
-#include <rte_memzone.h>
-#include <rte_ether.h>
-
 #include "mtnf_port.h"
 #include "mtnf_memzone.h"
 
@@ -53,8 +44,8 @@ static const struct rte_eth_conf default_eth_conf = {
 static int 
 init_single_port(struct rte_mempool *mbuf_pool, uint8_t port_id) {
 	const uint16_t rxRings = RX_QUEUE, txRings = TX_QUEUE;
-    const uint16_t nb_rxd = RX_RING_SIZE;
-    const uint16_t nb_txd = TX_RING_SIZE;
+    uint16_t nb_rxd = RX_DESC_PER_QUEUE;
+    uint16_t nb_txd = TX_DESC_PER_QUEUE;
 	struct rte_eth_conf port_conf = default_eth_conf;
 	struct rte_eth_rxconf rxq_conf;
 	struct rte_eth_txconf txq_conf;
@@ -93,13 +84,13 @@ init_single_port(struct rte_mempool *mbuf_pool, uint8_t port_id) {
 			rte_exit(EXIT_FAILURE, "rte_eth_rx_queue_setup:err=%d, port=%u\n", retval, port_id);
     }
 
-    txconf = dev_info.default_txconf;
-    txconf.txq_flags = ETH_TXQ_FLAGS_IGNORE;
-    txconf.offloads = port_conf.txmode.offloads;
+    txq_conf = dev_info.default_txconf;
+    txq_conf.txq_flags = ETH_TXQ_FLAGS_IGNORE;
+    txq_conf.offloads = port_conf.txmode.offloads;
     for (q = 0; q < txRings; q++) {
         retval = rte_eth_tx_queue_setup(port_id, q, nb_txd,
                                         rte_eth_dev_socket_id(port_id),
-                                        &txconf);
+                                        &txq_conf);
         if (retval < 0)
 			rte_exit(EXIT_FAILURE, "rte_eth_tx_queue_setup:err=%d, port=%u\n", retval, port_id);
     }
@@ -151,10 +142,10 @@ init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempo
     local_ports_info = memzone_reserve(ports_info_name, sizeof(*local_ports_info), 1);
 
     total_ports = rte_eth_dev_count();
-    local_ports_info.num_ports = 0;
+    local_ports_info->num_ports = 0;
     for (port_id = 0; port_id < total_ports; port_id++) {
         /* skip ports that are not enabled */
-        if ((portmask & (1 << port_id)) == 0) {
+        if ((port_mask & (1 << port_id)) == 0) {
             printf("\nSkipping disabled port %d\n", port_id);
             continue;
         }
@@ -163,22 +154,22 @@ init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempo
         if (retval != 0)
         	rte_exit(EXIT_FAILURE, "Cannot init port %u\n", port_id);
 
-        local_ports_info.id[local_ports_info.num_ports] = port_id;
-        rte_eth_macaddr_get(port_id, &local_ports_info.mac[local_ports_info.num_ports]);
+        local_ports_info->id[local_ports_info->num_ports] = port_id;
+        rte_eth_macaddr_get(port_id, &local_ports_info->mac[local_ports_info->num_ports]);
         printf("Port %u MAC: %02"PRIx8" %02"PRIx8" %02"PRIx8
                " %02"PRIx8" %02"PRIx8" %02"PRIx8"\n",
         port_id,
-        local_ports_info.mac[local_ports_info.num_ports].addr_bytes[0], 
-        local_ports_info.mac[local_ports_info.num_ports].addr_bytes[1],
-        local_ports_info.mac[local_ports_info.num_ports].addr_bytes[2], 
-        local_ports_info.mac[local_ports_info.num_ports].addr_bytes[3],
-        local_ports_info.mac[local_ports_info.num_ports].addr_bytes[4], 
-        local_ports_info.mac[local_ports_info.num_ports].addr_bytes[5]);
+        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[0], 
+        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[1],
+        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[2], 
+        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[3],
+        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[4], 
+        local_ports_info->mac[local_ports_info->num_ports].addr_bytes[5]);
         
-        local_ports_info.stats[local_ports_info.num_ports].rx = 0;
-        local_ports_info.stats[local_ports_info.num_ports].tx = 0;
-        local_ports_info.stats[local_ports_info.num_ports].tx_drop = 0;
-        local_ports_info.num_ports++;
+        local_ports_info->stats[local_ports_info->num_ports].rx = 0;
+        local_ports_info->stats[local_ports_info->num_ports].tx = 0;
+        local_ports_info->stats[local_ports_info->num_ports].tx_drop = 0;
+        local_ports_info->num_ports++;
 
     }
     return local_ports_info;
@@ -188,7 +179,7 @@ init_all_ports(const char *ports_info_name, uint32_t port_mask, struct rte_mempo
 /* Check the link status of all ports in up to 9s, and print them finally */
 void 
 check_all_ports_link_status(uint32_t port_mask) {
-	uint8_t portid, total_ports;
+	uint8_t port_id, total_ports;
 	uint8_t count, all_ports_up, print_flag = 0;
 	struct rte_eth_link link;
 
@@ -198,17 +189,17 @@ check_all_ports_link_status(uint32_t port_mask) {
 		all_ports_up = 1;
 		total_ports = rte_eth_dev_count();
 		for (port_id = 0; port_id < total_ports; port_id++) {
-			if ((port_mask & (1 << portid)) == 0)
+			if ((port_mask & (1 << port_id)) == 0)
 				continue;
 			memset(&link, 0, sizeof(link));
-			rte_eth_link_get_nowait(portid, &link);
+			rte_eth_link_get_nowait(port_id, &link);
 			/* print link status if flag set */
 			if (print_flag == 1) {
 				if (link.link_status)
-					printf("Port%d Link Up. Speed %u Mbps - %s\n",portid, link.link_speed,
-				(lin	k.link_duplex == ETH_LINK_FULL_DUPLEX) ? ("full-duplex") : ("half-duplex\n"));
+					printf("Port%d Link Up. Speed %u Mbps - %s\n",port_id, link.link_speed,
+				(link.link_duplex == ETH_LINK_FULL_DUPLEX) ? ("full-duplex") : ("half-duplex\n"));
 				else
-					printf("Port %d Link Down\n", portid);
+					printf("Port %d Link Down\n", port_id);
 				continue;
 			}
 			/* clear all_ports_up flag if any link down */
@@ -255,18 +246,18 @@ mtnf_stats_display_ports(unsigned difftime, struct ports_info *portsinfo) {
                                 "tx: %9"PRIu64"  (%9"PRIu64" pps)\t"
                                 "tx_drop: %9"PRIu64"  (%9"PRIu64" pps)\n\n",
                                 (unsigned)portsinfo->id[i],
-                                portsinfo->ports[portsinfo->id[i]].rx,
-                                (portsinfo->ports[portsinfo->id[i]].rx - rx_last[i])
+                                portsinfo->stats[portsinfo->id[i]].rx,
+                                (portsinfo->stats[portsinfo->id[i]].rx - rx_last[i])
                                         /difftime,
-                                portsinfo->ports[portsinfo->id[i]].tx,
-                                (portsinfo->ports[portsinfo->id[i]].tx - tx_last[i])
+                                portsinfo->stats[portsinfo->id[i]].tx,
+                                (portsinfo->stats[portsinfo->id[i]].tx - tx_last[i])
                                         /difftime,
-                                portsinfo->ports[portsinfo->id[i]].tx_drop,
-                                (portsinfo->ports[portsinfo->id[i]].tx_drop - tx_drop_last[i])
+                                portsinfo->stats[portsinfo->id[i]].tx_drop,
+                                (portsinfo->stats[portsinfo->id[i]].tx_drop - tx_drop_last[i])
                                         /difftime);
 
-                rx_last[i] = portsinfo->ports[portsinfo->id[i]].rx;
-                tx_last[i] = portsinfo->ports[portsinfo->id[i]].tx;
-                tx_drop_last[i] = portsinfo->ports[portsinfo->id[i]].tx_drop;
+                rx_last[i] = portsinfo->stats[portsinfo->id[i]].rx;
+                tx_last[i] = portsinfo->stats[portsinfo->id[i]].tx;
+                tx_drop_last[i] = portsinfo->stats[portsinfo->id[i]].tx_drop;
         }
 }

@@ -17,12 +17,6 @@ endif
 # binary name
 APP = mtnf
 
-LIBS_HEADER_DIR = $(PROJECT_PATH)/libs/dpdk/includes
-GOLF_LIB = $(PROJECT_PATH)/target/libs/
-NFS_HEADER = -I$(PROJECT_PATH)/nfs/ipsec -I$(PROJECT_PATH)/nfs/ipv4router -I$(PROJECT_PATH)/nfs/firewall  -I$(PROJECT_PATH)/nfs/nids/gpu
-NFS_HEADER += -I$(PROJECT_PATH)/framework/scheduler/local
-CUDA_LIB_PATH  ?= $(CUDA_PATH)/lib64
-
 # all source are stored in SRCS-y
 SRCS-y := main.c mtnf_args.c mtnf_init.c mtnf_stats.c
 

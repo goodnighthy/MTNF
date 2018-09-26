@@ -2,8 +2,15 @@
 #define _MTNF_PORT_H_
 
 #include <stdint.h>
+#include <stdio.h>
+#include <inttypes.h>
+
+#include <rte_ethdev.h>
 #include <rte_mempool.h>
+#include <rte_memzone.h>
 #include <rte_ether.h>
+#include <rte_cycles.h>
+
 
 #define RX_QUEUE 1
 #define TX_QUEUE 1
@@ -16,6 +23,17 @@
 
 #define CHECK_INTERVAL 100 /* 100ms */
 #define MAX_CHECK_TIME 90 /* 9s (90 * 100ms) in total */
+
+uint8_t rss_symmetric_key[40] = {    0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,};
 
 struct ports_info {
         uint8_t num_ports;

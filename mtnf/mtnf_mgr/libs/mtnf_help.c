@@ -12,7 +12,7 @@ mtnf_pkt_ether_hdr(struct rte_mbuf *pkt) {
         return NULL;
     }
 
-    ether = (struct ether_hdr *)rte_pktmbuf_mtod(pkt, struct ether_hdr *)
+    ether = (struct ether_hdr *)rte_pktmbuf_mtod(pkt, struct ether_hdr *);
 
     return ether;
 }
@@ -103,24 +103,6 @@ mtnf_pkt_is_ipv4(struct rte_mbuf* pkt) {
     return mtnf_pkt_ipv4_hdr(pkt) != NULL;
 }
 
-
-void
-mtnf_pkt_print(struct rte_mbuf* pkt) {
-    struct ipv4_hdr* ipv4 = mtnf_pkt_ipv4_hdr(pkt);
-    if (likely(ipv4 != NULL)) {
-        mtnf_pkt_print_ipv4(ipv4);
-    }
-
-    struct tcp_hdr* tcp = mtnf_pkt_tcp_hdr(pkt);
-    if (tcp != NULL) {
-        mtnf_pkt_print_tcp(tcp);
-    }
-
-    struct udp_hdr* udp = mtnf_pkt_udp_hdr(pkt);
-    if (udp != NULL) {
-        mtnf_pkt_print_udp(udp);
-    }
-}
 
 void mtnf_pkt_print_ether(struct ether_hdr* hdr) {
     const char *type = NULL;
@@ -240,4 +222,22 @@ mtnf_pkt_print_udp(struct udp_hdr* hdr) {
     printf("Destination Port: %" PRIu16 "\n", hdr->dst_port);
     printf("Length: %" PRIu16 "\n", hdr->dgram_len);
     printf("Checksum: %" PRIu16 "\n", hdr->dgram_cksum);
+}
+
+void
+mtnf_pkt_print(struct rte_mbuf* pkt) {
+    struct ipv4_hdr* ipv4 = mtnf_pkt_ipv4_hdr(pkt);
+    if (likely(ipv4 != NULL)) {
+        mtnf_pkt_print_ipv4(ipv4);
+    }
+
+    struct tcp_hdr* tcp = mtnf_pkt_tcp_hdr(pkt);
+    if (tcp != NULL) {
+        mtnf_pkt_print_tcp(tcp);
+    }
+
+    struct udp_hdr* udp = mtnf_pkt_udp_hdr(pkt);
+    if (udp != NULL) {
+        mtnf_pkt_print_udp(udp);
+    }
 }
