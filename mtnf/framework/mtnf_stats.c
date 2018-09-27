@@ -19,7 +19,7 @@ mtnf_stats_clear_terminal(void) {
  *
  */
 static void
-mtnf_stats_display_tenants(unsigned difftime, struct tenant_info *tenantsinfo) {
+mtnf_stats_display_tenants(unsigned difftime, struct tenants_info *tenantsinfo) {
 	unsigned i;
     /* Arrays to store last TX/RX count to calculate rate */
     static uint64_t rx_last[MAX_TENANTS];
@@ -110,7 +110,7 @@ mtnf_stats_display_ports(unsigned difftime, struct ports_info *portsinfo) {
 
 /* display the statistics of ports and tenants */
 void
-mtnf_stats_display_all(unsigned difftime, struct ports_info *portsinfo, struct tenant_info *tenantsinfo) {
+mtnf_stats_display_all(unsigned difftime, struct ports_info *portsinfo, struct tenants_info *tenantsinfo) {
     mtnf_stats_clear_terminal();
 
     mtnf_stats_display_ports(difftime, portsinfo);
@@ -119,7 +119,7 @@ mtnf_stats_display_all(unsigned difftime, struct ports_info *portsinfo, struct t
 
 /* clear the statistics of all tenants */
 void
-mtnf_stats_clear_all_tenants(struct tenant_info *tenantsinfo) {
+mtnf_stats_clear_all_tenants(struct tenants_info *tenantsinfo) {
     unsigned i;
 
     for (i = 0; i < MAX_TENANTS; i++) {
@@ -131,7 +131,7 @@ mtnf_stats_clear_all_tenants(struct tenant_info *tenantsinfo) {
 
 /* clear the statistics of tenant id */
 void
-mtnf_stats_clear_tenant(uint16_t id, struct tenant_info *tenantsinfo) {
+mtnf_stats_clear_tenant(uint16_t id, struct tenants_info *tenantsinfo) {
     tenantsinfo[id].stats.rx = 0;
     tenantsinfo[id].stats.tx = 0;
     tenantsinfo[id].stats.tx_drop = 0;

@@ -13,11 +13,13 @@
 
 #include "mtnf_common.h"
 #include "mtnf_args.h"
+#include "mtnf_tenant.h"
 #include "mtnf_init.h"
 #include "mtnf_stats.h"
 
 #define RTE_LOGTYPE_MTNF          RTE_LOGTYPE_USER1
 #define MAX_PKT_BURST 32
+#define MAX_PKT_BUFFER 64
 #define BUFFER_SIZE 128
 
 static volatile bool keep_running = 1;
@@ -31,7 +33,8 @@ handle_signal(int sig) {
 
 static int
 worker_thread(void *arg) {
-	uint8_t port_id, nb_rx, nb_tx;
+    uint8_t port_id;
+	uint16_t i, nb_rx, nb_tx, nb_handler;
 	struct rte_mbuf *pkts[PACKET_READ_SIZE];
 	struct worker_info *worker_info = (struct worker_info *)arg;
 
@@ -43,12 +46,27 @@ worker_thread(void *arg) {
 		nb_rx = rte_eth_rx_burst(port_id, 0, pkts, MAX_PKT_BURST);
 		ports->stats[port_id].rx += nb_rx;
 
-		nb_tx = rte_eth_tx_burst(port_id, 0, pkts, nb_rx);
-		if (unlikely(nb_tx < nb_rx)) {
-			pktmbuf_free_bulk(&pkts[nb_tx], nb_rx - nb_tx);
-			ports->stats[port_id].tx_drop += (nb_rx - nb_tx);
-		}
-		ports->stats[port_id].tx += nb_tx;
+        for (i = 0; i < nb_rx; i++) {
+            buffers[worker_info->id].buffer_slot[buffers[worker_info->id].num++] = pkts[i];
+
+            if (buffers[worker_info->id].num == MAX_PKT_BUFFER) {
+                tenants[worker_info->id].stats.rx += buffers[worker_info->id].num;
+
+                /* handle by network function */
+                nb_handler = mtnf_packets_handler(&buffers[worker_info->id], worker_info->id);
+
+                tenants[worker_info->id].stats.tx += nb_handler;
+
+                nb_tx = rte_eth_tx_burst(port_id, 0, buffers[worker_info->id].buffer_slot, nb_handler);
+                if (unlikely(nb_tx < nb_handler)) {
+                    pktmbuf_free_bulk(&buffers[worker_info->id].buffer_slot[nb_tx], nb_handler - nb_tx);
+                    ports->stats[port_id].tx_drop += (nb_handler - nb_tx);
+                }
+                ports->stats[port_id].tx += nb_tx;
+            }
+        }
+
+		
 	}
 
 	RTE_LOG(INFO, MTNF, "Core %d: worker thread done\n", rte_lcore_id());

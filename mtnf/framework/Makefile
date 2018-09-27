@@ -18,9 +18,9 @@ endif
 APP = mtnf
 
 # all source are stored in SRCS-y
-SRCS-y := main.c mtnf_args.c mtnf_init.c mtnf_stats.c
+SRCS-y := main.c mtnf_args.c mtnf_tenant.c mtnf_init.c mtnf_stats.c
 
-INC := mtnf_common.h mtnf_args.h mtnf_init.h mtnf_stats.h
+INC := mtnf_common.h mtnf_args.h mtnf_tenant.h mtnf_init.h mtnf_stats.h
 
 CFLAGS += $(WERROR_FLAGS) -O3 $(USER_FLAGS)
 CFLAGS += -I$(SRCDIR)/../ -I$(SRCDIR)/../libs/includes/

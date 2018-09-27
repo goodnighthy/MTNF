@@ -10,12 +10,14 @@
 
 #include "mtnf_common.h"
 #include "mtnf_args.h"
+#include "mtnf_tenant.h"
 
 
 /*************************External global variables***************************/
-extern struct tenant_info *tenants;
+extern struct tenants_info *tenants;
 extern struct ports_info *ports;
 extern struct rte_mempool *pktmbuf_pool;
+extern struct tenants_buffer *buffers;
 
 
 /**********************************Functions**********************************/

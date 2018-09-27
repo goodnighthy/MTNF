@@ -18,6 +18,20 @@ init_pktmbuf_pool(const char *pktmbuf_pool_name, uint32_t num_mbufs) {
     return pktmbuf_pool;
 }
 
+/* init the membuffer for pktmbuf */
+void *
+init_pktmbuf_buffer(const char *pktmbuf_buffer_name, uint32_t length_buf, uint32_t num_bufs) {
+    void *pktmbuf_buffer;
+
+    pktmbuf_buffer = rte_calloc(pktmbuf_buffer_name, length_buf, num_bufs, 0);
+
+    if (pktmbuf_buffer == NULL) {
+        rte_exit(EXIT_FAILURE, "%s\n", rte_strerror(rte_errno));
+    }
+
+    return pktmbuf_buffer;
+}
+
 /* free a bulk of pktmbuf */
 void 
 pktmbuf_free_bulk(struct rte_mbuf *pktmbuf[], unsigned n) {
