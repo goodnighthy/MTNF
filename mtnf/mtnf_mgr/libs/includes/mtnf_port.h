@@ -24,17 +24,6 @@
 #define CHECK_INTERVAL 100 /* 100ms */
 #define MAX_CHECK_TIME 90 /* 9s (90 * 100ms) in total */
 
-uint8_t rss_symmetric_key[40] = {    0x6d, 0x5a, 0x6d, 0x5a,
-                                     0x6d, 0x5a, 0x6d, 0x5a,
-                                     0x6d, 0x5a, 0x6d, 0x5a,
-                                     0x6d, 0x5a, 0x6d, 0x5a,
-                                     0x6d, 0x5a, 0x6d, 0x5a,
-                                     0x6d, 0x5a, 0x6d, 0x5a,
-                                     0x6d, 0x5a, 0x6d, 0x5a,
-                                     0x6d, 0x5a, 0x6d, 0x5a,
-                                     0x6d, 0x5a, 0x6d, 0x5a,
-                                     0x6d, 0x5a, 0x6d, 0x5a,};
-
 /* Init all ports */
 int
 init_all_ports(uint32_t port_mask, struct rte_mempool *mbuf_pool);

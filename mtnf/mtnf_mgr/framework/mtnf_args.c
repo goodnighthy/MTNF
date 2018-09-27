@@ -2,6 +2,15 @@
 
 /*******************************Internal functions*********************************/
 
+/* postmask of the devices */
+uint32_t port_mask;
+
+/* number of the tenants */
+uint32_t tenant_number = MAX_TENANTS;
+
+/* time period of print statistics */
+uint64_t timer_period = TIMER_PERIOD; 
+
 /* display usage */
 static void
 mtnf_usage(const char *prgname) {
@@ -16,7 +25,7 @@ mtnf_usage(const char *prgname) {
 static int
 mtnf_parse_portmask(const char *portmask) {
     char *end = NULL;
-    uint32_t pm;
+    uint32_t pm, pm_tmp;
     uint8_t count = 0;
 
     if (portmask == NULL)
@@ -31,9 +40,10 @@ mtnf_parse_portmask(const char *portmask) {
     if ((portmask[0] == '\0') || (end == NULL) || (*end != '\0'))
         return -1;
 
+    pm_tmp = pm;
     /* loop through bits of the mask and mark ports */
-    while (pm != 0) {
-       if (pm & 0x01) { /* bit is set in mask, use port */
+    while (pm_tmp != 0) {
+       if (pm_tmp & 0x01) { /* bit is set in mask, use port */
             if (count >= rte_eth_dev_count())
                 printf("WARNING: requested port %u not present"
                     " - ignoring\n", (unsigned)count);
@@ -42,7 +52,7 @@ mtnf_parse_portmask(const char *portmask) {
                 rte_eth_macaddr_get(count, &ports->mac[ports->num_ports++]);
             }
         }
-        pm = (pm >> 1);
+        pm_tmp = (pm_tmp >> 1);
         count++;
     }
 
@@ -51,20 +61,20 @@ mtnf_parse_portmask(const char *portmask) {
 
 /* parse the tenant number */
 static int
-mtnf_parse_tenant_number(const char *tenant_number) {
+mtnf_parse_tenant_number(const char *tenant_number_arg) {
     char *end = NULL;
     uint32_t tn;
 
-    if (tenant_number == NULL)
+    if (tenant_number_arg == NULL)
         return -1;
 
     /* convert parameter to a number and verify */
-    tn = strtoul(tenant_number, &end, 10);
+    tn = strtoul(tenant_number_arg, &end, 10);
     if (tn == 0) {
         printf("WARNING: No ports are being used.\n");
         return 0;
     }
-    if ((tenant_number[0] == '\0') || (end == NULL) || (*end != '\0'))
+    if ((tenant_number_arg[0] == '\0') || (end == NULL) || (*end != '\0'))
         return -1;
 
     return tn;
@@ -72,13 +82,13 @@ mtnf_parse_tenant_number(const char *tenant_number) {
 
 /* parse the time period */
 static int
-mtnf_parse_timer_period(const char *timer_period) {
+mtnf_parse_timer_period(const char *timer_period_arg) {
     char *end = NULL;
     uint32_t tp;
 
     /* parse number string */
-    tp = strtol(timer_period, &end, 10);
-    if ((q_arg[0] == '\0') || (end == NULL) || (*end != '\0'))
+    tp = strtol(timer_period_arg, &end, 10);
+    if ((timer_period_arg[0] == '\0') || (end == NULL) || (*end != '\0'))
         return -1;
 
     return tp;
@@ -86,7 +96,7 @@ mtnf_parse_timer_period(const char *timer_period) {
 
 /**********************************Interface***************************************/
 /* Parse the argument given in the command line of the application */
-static int
+int
 mtnf_parse_args(int argc, char **argv) {
     int opt, ret, tenant_count, timer_secs;
     char **argvopt;

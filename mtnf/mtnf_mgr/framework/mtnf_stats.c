@@ -1,3 +1,5 @@
+#include "mtnf_stats.h"
+
 /*******************************Internal Function*********************************/
 
 /*
@@ -9,7 +11,7 @@ mtnf_stats_clear_terminal(void) {
     const char clr[] = { 27, '[', '2', 'J', '\0' };
     const char topLeft[] = { 27, '[', '1', ';', '1', 'H', '\0' };
 
-    fprintf(stats_out, "%s%s", clr, topLeft);
+    printf("%s%s", clr, topLeft);
 }
 
 /*
@@ -69,7 +71,7 @@ print_MAC(uint8_t port) {
 }
 
 /* display the statistics of all ports */
-void 
+static void 
 mtnf_stats_display_ports(unsigned difftime, struct ports_info *portsinfo) {
         unsigned i;
         /* Arrays to store last TX/RX count to calculate rate */
@@ -112,7 +114,7 @@ mtnf_stats_display_all(unsigned difftime, struct ports_info *portsinfo, struct t
     mtnf_stats_clear_terminal();
 
     mtnf_stats_display_ports(difftime, portsinfo);
-    mtnf_stats_display_nfs(difftime, tenantsinfo);
+    mtnf_stats_display_tenants(difftime, tenantsinfo);
 }
 
 /* clear the statistics of all tenants */

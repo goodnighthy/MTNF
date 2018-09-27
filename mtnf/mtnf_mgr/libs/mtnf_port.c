@@ -1,5 +1,16 @@
 #include "mtnf_port.h"
 
+uint8_t rss_symmetric_key[40] = {    0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,
+                                     0x6d, 0x5a, 0x6d, 0x5a,};
+
 static const struct rte_eth_conf default_eth_conf = {
     .link_speeds = ETH_LINK_SPEED_AUTONEG, /* auto negotiate speed */
     .lpbk_mode = 0,

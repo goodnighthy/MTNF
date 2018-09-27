@@ -6,8 +6,5 @@
 *.a
 *.so
 
-# bash
-*.sh
-
 # project
 mtnf_mgr/target

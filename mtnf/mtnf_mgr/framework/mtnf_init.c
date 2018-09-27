@@ -1,8 +1,8 @@
-#include <stdint.h>
-#include <stdio.h>
-
 #include "mtnf_init.h"
-#include "mtnf_common.h"
+
+struct tenant_info *tenants;
+struct ports_info *ports;
+struct rte_mempool *pktmbuf_pool;
 
 int
 init(int argc, char *argv[]) {
@@ -19,9 +19,9 @@ init(int argc, char *argv[]) {
     tenants = memzone_reserve(MTNF_TENANT_INFO, sizeof(*tenants), MAX_TENANTS);
 
     /* set up ports info */
-    ports = memzone_reserve(ports_info_name, sizeof(*ports), 1);
+    ports = memzone_reserve(MTNF_PORT_INFO, sizeof(*ports), 1);
 
-    retval = mtnf_parse_args(int argc, char **argv);
+    retval = mtnf_parse_args(argc, argv);
     if (retval < 0)
     	return -1; 
 
@@ -29,7 +29,11 @@ init(int argc, char *argv[]) {
     pktmbuf_pool = init_pktmbuf_pool(PKTMBUF_POOL_NAME, ports->num_ports * MBUFS_PER_PORT + tenant_number * MBUFS_PER_TENANT);
 
     /* init ports and set up ports info */
-    ports = init_all_ports(port_mask, pktmbuf_pool);
+    retval = init_all_ports(port_mask, pktmbuf_pool);
+    if (retval < 0)
+        return -1;
 
-    return 0
+    check_all_ports_link_status(port_mask);
+
+    return 0;
 }

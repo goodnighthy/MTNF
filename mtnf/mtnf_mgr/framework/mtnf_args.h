@@ -1,5 +1,5 @@
-#ifndef _MTNF_PORT_H_
-#define _MTNF_PORT_H_
+#ifndef _MTNF_ARGS_H_
+#define _MTNF_ARGS_H_
 
 #include <getopt.h>
 #include <stdint.h>
@@ -11,12 +11,16 @@
 #include "mtnf_common.h"
 #include "mtnf_init.h"
 
+
 /********************************Global variables*********************************/
 /* postmask of the devices */
-uint32_t tenant_number = MAX_TENANTS;
+extern uint32_t port_mask;
+
+/* number of the tenants */
+extern uint32_t tenant_number;
 
 /* time period of print statistics */
-uint64_t timer_period = TIMER_PERIOD; 
+extern uint64_t timer_period; 
 
 /* parse the portmask */
 int

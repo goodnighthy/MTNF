@@ -7,8 +7,9 @@
 
 #include <rte_ether.h>
 
-#include "mtnf_port.h"
 #include "mtnf_common.h"
+#include "mtnf_args.h"
+#include "mtnf_init.h"
 
 /* display the statistics of ports and tenants */
 void

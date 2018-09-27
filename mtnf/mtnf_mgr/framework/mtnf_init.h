@@ -1,18 +1,21 @@
 #ifndef _MTNF_INIT_H_
 #define _MTNF_INIT_H_
 
-#include "mtnf_args.h"
-#include "mtnf_help.h"
+#include <stdint.h>
+#include <stdio.h>
+
 #include "mtnf_mempool.h"
 #include "mtnf_memzone.h"
 #include "mtnf_port.h"
 
+#include "mtnf_common.h"
+#include "mtnf_args.h"
+
 
 /*************************External global variables***************************/
-/* postmask of the devices */
-struct tenant_info *tenants;
-struct ports_info *ports;
-struct rte_mempool *pktmbuf_pool;
+extern struct tenant_info *tenants;
+extern struct ports_info *ports;
+extern struct rte_mempool *pktmbuf_pool;
 
 
 /**********************************Functions**********************************/
