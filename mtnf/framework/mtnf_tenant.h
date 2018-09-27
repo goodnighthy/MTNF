@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "mtnf_monitor.h"
+
 #include "mtnf_common.h"
 #include "mtnf_args.h"
 

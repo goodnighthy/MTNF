@@ -11,6 +11,8 @@
 #include <rte_log.h>
 #include <rte_branch_prediction.h>
 
+#include "mtnf_help.h"
+
 #include "mtnf_common.h"
 #include "mtnf_args.h"
 #include "mtnf_tenant.h"

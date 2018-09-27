@@ -32,8 +32,8 @@ INCLUDES = -I./includes/
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
 HEADERS = $(wildcard includes/*.h)
-PROD = libmtnfdpdk.so
-PROD_STATIC = libmtnfdpdk.a
+PROD = libmtnfs.so
+PROD_STATIC = libmtnfs.a
 
 DEPS = .make.dep
 
@@ -49,7 +49,7 @@ else
 # parallel build by default
 CORES ?= $(shell nproc || echo 1)
 MAKEFLAGS += -j $(CORES)
-INSTALL_PATH = ../target/libs/
+INSTALL_PATH = ../target/nfs/
 
 .PHONY: all clean tags cscope all-static
 
