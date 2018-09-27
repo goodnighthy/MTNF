@@ -6,7 +6,7 @@
 #include <rte_mbuf.h>
 #include <rte_ether.h>
 
-#define MAX_TENANTS 32
+#define MAX_TENANTS 16
 
 #define MBUFS_PER_PORT 2048
 #define MBUFS_PER_TENANT 256
