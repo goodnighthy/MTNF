@@ -6,8 +6,14 @@ uint32_t state_length;
 /* init tenants state */
 void
 mtnf_states_init(void) {
+	uint16_t i;
+
 	state_length = mtnf_monitor_register();
 	states = memzone_reserve(MTNF_TENANT_STATE, state_length, tenant_number);
+
+	for (i = 0; i < tenant_number; i++) {
+		mtnf_monitor_init((void *)((uint8_t *)states + state_length * i));
+	}
 }
 
 /* packet handler for tenant id */

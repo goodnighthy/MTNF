@@ -6,6 +6,16 @@ mtnf_monitor_register(void) {
 	return sizeof(struct monitor_statistics);
 }
 
+/* init tenant state */
+void
+mtnf_monitor_init(void *state) {
+	struct monitor_statistics *stats;
+
+	stats = (struct monitor_statistics *)state;
+	stats->tcp_num = 0;
+	stats->udp_num = 0;
+}
+
 /* handle tenant packets */
 uint16_t
 mtnf_monitor_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {

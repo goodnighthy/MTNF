@@ -18,6 +18,10 @@ struct monitor_statistics
 uint32_t
 mtnf_monitor_register(void);
 
+/* init tenant state */
+void
+mtnf_monitor_init(void *state);
+
 /* handle tenant packets */
 uint16_t
 mtnf_monitor_handler(struct rte_mbuf *pkt[], uint16_t num, void *state);
