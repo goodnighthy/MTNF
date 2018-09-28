@@ -5,6 +5,7 @@
 
 #include <rte_mbuf.h>
 #include <rte_ether.h>
+#include <rte_ip.h>
 
 #define MAX_TENANTS 16
 
@@ -57,5 +58,14 @@ struct ports_info {
         	uint64_t tx_drop;
         } stats[RTE_MAX_ETHPORTS] __rte_cache_aligned;
 };
+
+static inline uint8_t
+get_tenant_id(struct rte_mbuf *pkt) {
+    struct ipv4_hdr *ipv4;
+
+    ipv4 = (struct ipv4_hdr *)(rte_pktmbuf_mtod(pkt, uint8_t *) + sizeof(struct ether_hdr));
+
+    return ipv4->type_of_service;
+}
 
 #endif
