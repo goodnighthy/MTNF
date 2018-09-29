@@ -11,9 +11,9 @@
 
 /* each entry represents the timeslot, number, token and port */
 __export __mem static uint32_t tenants[MAX_TENANTS][4] = {{0, 0, 20000, 0},
-														  {1, 0, 20000, 1},
-														  {2, 0, 20000, 2},
-														  {3, 0, 20000, 3}}; 
+														  {0, 0, 20000, 1},
+														  {0, 0, 20000, 2},
+														  {0, 0, 20000, 3}}; 
 
 //=============================================================================================================
 int pif_plugin_primitive_dispatch(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_data) {

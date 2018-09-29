@@ -65,7 +65,7 @@ get_tenant_id(struct rte_mbuf *pkt) {
 
     ipv4 = (struct ipv4_hdr *)(rte_pktmbuf_mtod(pkt, uint8_t *) + sizeof(struct ether_hdr));
 
-    return ipv4->type_of_service;
+    return (ipv4->type_of_service) % MAX_TENANTS;
 }
 
 #endif

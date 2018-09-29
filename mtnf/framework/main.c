@@ -9,6 +9,7 @@
 #include <rte_lcore.h>
 #include <rte_launch.h>
 #include <rte_log.h>
+#include <rte_prefetch.h>
 #include <rte_branch_prediction.h>
 
 #include "mtnf_help.h"
@@ -35,7 +36,7 @@ handle_signal(int sig) {
 
 static int
 worker_thread(void *arg) {
-    uint8_t port_id;
+    uint8_t port_id, tenant_id;
 	uint16_t i, nb_rx, nb_tx, nb_handler;
 	struct rte_mbuf *pkts[PACKET_READ_SIZE];
 	struct worker_info *worker_info = (struct worker_info *)arg;
@@ -49,19 +50,21 @@ worker_thread(void *arg) {
 		ports->stats[port_id].rx += nb_rx;
 
         for (i = 0; i < nb_rx; i++) {
-            buffers[worker_info->id].buffer_slot[buffers[worker_info->id].num++] = pkts[i];
+            rte_prefetch0(rte_pktmbuf_mtod(pkts[i], void *));
+            tenant_id = get_tenant_id(pkts[i]);
+            buffers[tenant_id].buffer_slot[buffers[tenant_id].num++] = pkts[i];
 
-            if (buffers[worker_info->id].num == MAX_PKT_BUFFER) {
-                tenants[worker_info->id].stats.rx += buffers[worker_info->id].num;
+            if (buffers[tenant_id].num == MAX_PKT_BUFFER) {
+                tenants[tenant_id].stats.rx += buffers[tenant_id].num;
 
                 /* handle by network function */
-                nb_handler = mtnf_packets_handler(&buffers[worker_info->id], worker_info->id);
+                nb_handler = mtnf_packets_handler(&buffers[tenant_id], tenant_id);
 
-                tenants[worker_info->id].stats.tx += nb_handler;
+                tenants[tenant_id].stats.tx += nb_handler;
 
-                nb_tx = rte_eth_tx_burst(port_id, 0, buffers[worker_info->id].buffer_slot, nb_handler);
+                nb_tx = rte_eth_tx_burst(port_id, 0, buffers[tenant_id].buffer_slot, nb_handler);
                 if (unlikely(nb_tx < nb_handler)) {
-                    pktmbuf_free_bulk(&buffers[worker_info->id].buffer_slot[nb_tx], nb_handler - nb_tx);
+                    pktmbuf_free_bulk(&buffers[tenant_id].buffer_slot[nb_tx], nb_handler - nb_tx);
                     ports->stats[port_id].tx_drop += (nb_handler - nb_tx);
                 }
                 ports->stats[port_id].tx += nb_tx;
