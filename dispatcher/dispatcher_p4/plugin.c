@@ -6,9 +6,14 @@
 #include <pif_plugin.h>
 
 //=============================================================================================================
-#define MAX_TENANTS 16 //max number of tenants support
+/* max number of tenants supported */
+#define MAX_TENANTS 16 
 
-__export __mem static uint32_t tenants[MAX_TENANTS][4] //each entry represents the timeslot, number, token and port
+/* each entry represents the timeslot, number, token and port */
+__export __mem static uint32_t tenants[MAX_TENANTS][4] = {{0, 0, 20000, 0},
+														  {1, 0, 20000, 1},
+														  {2, 0, 20000, 2},
+														  {3, 0, 20000, 3}}; 
 
 //=============================================================================================================
 int pif_plugin_primitive_dispatch(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_data) {
@@ -18,7 +23,7 @@ int pif_plugin_primitive_dispatch(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *ma
 	uint32_t timestamp, timeslot, tid;
 	PIF_PLUGIN_ipv4_T *ipv4;
 
-	timestamp = pif_plugin_meta_get__intrinsic_metadata__ingress_global_tstamp(headers);
+	timestamp = pif_plugin_meta_get__intrinsic_metadata__ingress_global_timestamp(headers);
 	timeslot = (timestamp >> 21); //about 1.5m
 	ipv4 = pif_plugin_hdr_get_ipv4(headers);
 	tid = ipv4->diffserv;

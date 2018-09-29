@@ -1,0 +1,208 @@
+{
+    "tables": {
+        "forward": {
+            "rules": [
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "p0"
+                            }
+                        }, 
+                        "type": "do_forward"
+                    }, 
+                    "name": "rule_0", 
+                    "match": {
+                        "standard_metadata.ingress_port": {
+                            "value": "v0.0"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "p0"
+                            }
+                        }, 
+                        "type": "do_forward"
+                    }, 
+                    "name": "rule_1", 
+                    "match": {
+                        "standard_metadata.ingress_port": {
+                            "value": "v0.1"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "p1"
+                            }
+                        }, 
+                        "type": "do_forward"
+                    }, 
+                    "name": "rule_2", 
+                    "match": {
+                        "standard_metadata.ingress_port": {
+                            "value": "v0.2"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "p1"
+                            }
+                        }, 
+                        "type": "do_forward"
+                    }, 
+                    "name": "rule_3", 
+                    "match": {
+                        "standard_metadata.ingress_port": {
+                            "value": "v0.3"
+                        }
+                    }
+                }
+            ], 
+            "default_rule": {
+                "action": {
+                    "type": "do_drop"
+                }, 
+                "name": "default"
+            }
+        }, 
+        "dispatcher": {
+            "default_rule": {
+                "action": {
+                    "type": "do_dispatch"
+                }, 
+                "name": "default"
+            }
+        }, 
+        "classifier": {
+            "rules": [
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "0"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "rule_0", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.0.1"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.1.1"
+                        }, 
+                        "ipv4.protocol": {
+                            "value": "6"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "1"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "rule_1", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.1.1"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.0.1"
+                        }, 
+                        "ipv4.protocol": {
+                            "value": "6"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "2"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "ruel_2", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.2.1"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.3.1"
+                        }, 
+                        "ipv4.protocol": {
+                            "value": "6"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "3"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "rule_3", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.3.1"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.2.1"
+                        }, 
+                        "ipv4.protocol": {
+                            "value": "6"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }
+            ], 
+            "default_rule": {
+                "action": {
+                    "type": "do_drop"
+                }, 
+                "name": "default"
+            }
+        }
+    }
+}

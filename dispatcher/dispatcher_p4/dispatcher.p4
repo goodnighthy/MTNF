@@ -1,7 +1,10 @@
-#include "includes/headers.p4"
-#include "includes/metadata.p4"
-#include "includes/parser.p4"
+// #include "includes/headers.p4"
+// #include "includes/metadata.p4"
+// #include "includes/parser.p4"
 
+#include "headers.p4"
+#include "metadata.p4"
+#include "parser.p4"
 //==========================================================================================================
 action do_drop() {
 	drop();
