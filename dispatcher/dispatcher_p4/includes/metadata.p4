@@ -1,6 +1,6 @@
 header_type intrinsic_metadata_t {
     fields {
-        ingress_global_timestamp : 64;
+        ingress_global_timestamp : 32;
     }
 }
 

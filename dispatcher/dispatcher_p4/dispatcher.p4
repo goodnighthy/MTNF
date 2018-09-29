@@ -59,8 +59,9 @@ control ingress {
 	if (standard_metadata.ingress_port == 0 or standard_metadata.ingress_port == 1) {
 		apply(classifier);
 		apply(dispatcher);
+	} else {
+		apply(forward);
 	}
-	apply(forward);
 }
 
 //==========================================================================================================
