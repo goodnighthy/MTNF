@@ -32,11 +32,15 @@ table classifier {
 //==========================================================================================================
 primitive_action primitive_dispatch();
 
-action do_dispatch() {
+action do_dispatch(port) {
 	primitive_dispatch();
+	modify_field(standard_metadata.egress_spec, port);
 }
 
 table dispatcher {
+	reads {
+		ipv4.diffserv : exact;
+	}
 	actions {
 		do_dispatch;
 	}
