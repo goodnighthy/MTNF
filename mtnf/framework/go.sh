@@ -3,7 +3,7 @@
 function usage {
         echo "$0 CPU-LIST PORTMASK [-t TENANT_NUMBER] [-T TIMER_PERIOD]"
         # this works well on our 2x6-core nodes
-        echo "$0 0,1,2,6 3 --> cores 0, 1, 2 and 6 with ports 0 and 1"
+        echo "$0 0,1,2,3,4 f --> cores 0, 1, 2 and 6 with ports 0 and 1"
         echo -e "\tCores will be used as follows in numerical order:"
         echo -e "\t\tWORKER thread, ..., MASTER thread"
         exit 1

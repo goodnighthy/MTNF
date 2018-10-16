@@ -20,7 +20,7 @@
 #include <rte_ether.h>
 
 #include "mtnf_help.h"
-#include "aes.h"
+#include "mtnf_aes.h"
 
 struct aes_encrypt_statistics {
     WORD key_schedule[60]; //word Schedule

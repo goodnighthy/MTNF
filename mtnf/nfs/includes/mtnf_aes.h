@@ -46,8 +46,8 @@
 * Source:     https://github.com/B-Con/crypto-algorithms 
 *********************************************************************/
  
-#ifndef AES_H
-#define AES_H
+#ifndef _MTNF_AES_H_
+#define _MTNF_AES_H_
  
 /*************************** HEADER FILES ***************************/
 #include <stddef.h>

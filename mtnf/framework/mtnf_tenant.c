@@ -8,11 +8,13 @@ void
 mtnf_states_init(void) {
 	uint16_t i;
 
-	state_length = mtnf_monitor_register();
+	state_length = mtnf_aes_encrypt_register();
+//	state_length = mtnf_monitor_register();
 	states = memzone_reserve(MTNF_TENANT_STATE, state_length, tenant_number);
 
 	for (i = 0; i < tenant_number; i++) {
-		mtnf_monitor_init((void *)((uint8_t *)states + state_length * i));
+		mtnf_aes_encrypt_init((void *)((uint8_t *)states + state_length * i));
+//		mtnf_monitor_init((void *)((uint8_t *)states + state_length * i));
 	}
 }
 
@@ -23,7 +25,8 @@ mtnf_packets_handler(struct tenants_buffer *buffer, uint8_t id) {
 	void *state;
 
 	state = (void *)((uint8_t *)states + state_length * id);
-	nb_handler = mtnf_monitor_handler(buffer->buffer_slot, buffer->num, state);
+	nb_handler = mtnf_aes_encrypt_handler(buffer->buffer_slot, buffer->num, state);
+//	nb_handler = mtnf_monitor_handler(buffer->buffer_slot, buffer->num, state);
 
 	buffer->num = 0;
 

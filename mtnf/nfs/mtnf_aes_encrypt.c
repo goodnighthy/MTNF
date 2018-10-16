@@ -58,8 +58,10 @@ mtnf_aes_encrypt_register(void) {
 /* init tenant state */
 void
 mtnf_aes_encrypt_init(void *state) {
+	struct aes_encrypt_statistics *stats;
+	stats = (struct aes_encrypt_statistics *)state;
     /* Initialise encryption engine. Key should be configurable. */
-	aes_key_setup(key[0], key_schedule, 256);
+	aes_key_setup(key[0], stats->key_schedule, 256);
 }
 
 /* handle tenant packets */
@@ -74,15 +76,15 @@ mtnf_aes_encrypt_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 	num_out = num;
 	for (i = 0; i < num; i++) {
         /* Check if we have a valid UDP packet */
-        udp = mtnf_pkt_udp_hdr(pkt);
+        udp = mtnf_pkt_udp_hdr(pkt[i]);
         if (udp != NULL) {
 
             /* Get at the payload */
             pkt_data = ((uint8_t *) udp) + sizeof(struct udp_hdr);
             /* Calculate length */
-            eth = rte_pktmbuf_mtod(pkt, uint8_t *);
+            eth = rte_pktmbuf_mtod(pkt[i], uint8_t *);
             hlen = pkt_data - eth;
-            plen = pkt->pkt_len - hlen;
+            plen = pkt[i]->pkt_len - hlen;
 
             /* Encrypt. */
             /* IV should change with every packet, but we don't have any
@@ -105,10 +107,7 @@ static void
 do_stats_display(struct rte_mbuf* pkt) {
         const char clr[] = { 27, '[', '2', 'J', '\0' };
         const char topLeft[] = { 27, '[', '1', ';', '1', 'H', '\0' };
-        static uint64_t pkt_process = 0;
         struct ipv4_hdr* ip;
-
-        pkt_process += print_delay;
 
         /* Clear screen and move to top left */
         printf("%s%s", clr, topLeft);
@@ -117,7 +116,6 @@ do_stats_display(struct rte_mbuf* pkt) {
         printf("-----\n");
         printf("Port : %d\n", pkt->port);
         printf("Size : %d\n", pkt->pkt_len);
-        printf("N°   : %"PRIu64"\n", pkt_process);
         printf("\n\n");
 
         ip = mtnf_pkt_ipv4_hdr(pkt);

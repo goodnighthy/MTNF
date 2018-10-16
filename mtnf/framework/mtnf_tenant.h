@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 #include "mtnf_monitor.h"
+#include "mtnf_aes.h"
+#include "mtnf_aes_encrypt.h"
 
 #include "mtnf_common.h"
 #include "mtnf_args.h"
