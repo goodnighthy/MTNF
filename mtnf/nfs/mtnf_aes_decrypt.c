@@ -36,12 +36,12 @@
  *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * aesencrypt.c - Encrypt UDP packets using AES
+ * aesdecrypt.c - Decrypt UDP packets using AES
  ********************************************************************/
 
-#include "mtnf_aes_encrypt.h"
+#include "mtnf_aes_decrypt.h"
 
-/* AES encryption parameters */
+/* AES decryption parameters */
 static BYTE key[1][32] = {
   {0x60,0x3d,0xeb,0x10,0x15,0xca,0x71,0xbe,0x2b,0x73,0xae,0xf0,0x85,0x7d,0x77,0x81,0x1f,0x35,0x2c,0x07,0x3b,0x61,0x08,0xd7,0x2d,0x98,0x10,0xa3,0x09,0x14,0xdf,0xf4}
 };
@@ -51,66 +51,45 @@ static BYTE iv[1][16] = {
 
 /* register tenant state */
 uint32_t
-mtnf_aes_encrypt_register(void) {
-    return sizeof(struct aes_encrypt_statistics);
+mtnf_aes_decrypt_register(void) {
+    return sizeof(struct aes_decrypt_statistics);
 }
 
 /* init tenant state */
 void
-mtnf_aes_encrypt_init(void *state) {
-	struct aes_encrypt_statistics *stats;
-	stats = (struct aes_encrypt_statistics *)state;
-    /* Initialise encryption engine. Key should be configurable. */
+mtnf_aes_decrypt_init(void *state) {
+	struct aes_decrypt_statistics *stats;
+	stats = (struct aes_decrypt_statistics *)state;
+    /* Initialise decryption engine. Key should be configurable. */
 	aes_key_setup(key[0], stats->key_schedule, 256);
 }
 
 /* handle tenant packets */
 uint16_t
-mtnf_aes_encrypt_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
-	struct aes_encrypt_statistics *stats;
+mtnf_aes_decrypt_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
+	struct aes_decrypt_statistics *stats;
     struct udp_hdr *udp;
-    struct tcp_hdr *tcp;
 	uint16_t i, num_out, plen, hlen;
     uint8_t *pkt_data, *eth;
-    BYTE tmp_data[10000];
 
-	stats = (struct aes_encrypt_statistics *)state;
-	num_out = 0;
+	stats = (struct aes_decrypt_statistics *)state;
+	num_out = num;
 	for (i = 0; i < num; i++) {
-
-        mtnf_pkt_print(pkt[i]);
-
         /* Check if we have a valid UDP packet */
         udp = mtnf_pkt_udp_hdr(pkt[i]);
         if (udp != NULL) {
+
             /* Get at the payload */
             pkt_data = ((uint8_t *) udp) + sizeof(struct udp_hdr);
             /* Calculate length */
             eth = rte_pktmbuf_mtod(pkt[i], uint8_t *);
             hlen = pkt_data - eth;
             plen = pkt[i]->pkt_len - hlen;
-            printf("hlen: %u, plen: %u\n", hlen, plen);
-            printf("pkt_data: %lu, eth: %lu", (uint64_t)pkt_data, (uint64_t)eth);
 
-
-            aes_encrypt_ctr(pkt_data, plen, pkt_data, stats->key_schedule, 256, iv[0]);
-            num_out ++;
-            continue;
-        }
-        /* Check if we have a valid TCP packet */
-        tcp = mtnf_pkt_tcp_hdr(pkt[i]);
-        if (tcp != NULL) {
-            /* Get at the payload */
-            pkt_data = ((uint8_t *) tcp) + sizeof(struct tcp_hdr);
-            /* Calculate length */
-            eth = rte_pktmbuf_mtod(pkt[i], uint8_t *);
-            hlen = pkt_data - eth;
-            plen = pkt[i]->pkt_len - hlen;
-            printf("hlen: %u, plen: %u\n", hlen, plen);
-            printf("pkt_data: %lu, eth: %lu", (uint64_t)pkt_data, (uint64_t)eth);
-
-            aes_encrypt_ctr(pkt_data, plen, tmp_data, stats->key_schedule, 256, iv[0]);
-            printf("processed %d\n", (int)i);
+            /* Decrypt. */
+            /* IV should change with every packet, but we don't have any
+            * way to send it to the other side. */
+            aes_decrypt_ctr(pkt_data, plen, pkt_data, stats->key_schedule, 256, iv[0]);
             num_out ++;
         }
 	}

@@ -386,7 +386,7 @@ void aes_encrypt_ctr(const BYTE in[], size_t in_len, BYTE out[], const WORD key[
             increment_iv(iv_buf, AES_BLOCK_SIZE);
         }
     }
- 
+
     aes_encrypt(iv_buf, out_buf, key, keysize);
     xor_buf(out_buf, &out[idx], in_len - idx);   // Use the Most Significant bytes.
 }
