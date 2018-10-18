@@ -77,9 +77,6 @@ mtnf_aes_encrypt_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 	stats = (struct aes_encrypt_statistics *)state;
 	num_out = 0;
 	for (i = 0; i < num; i++) {
-
-        mtnf_pkt_print(pkt[i]);
-
         /* Check if we have a valid UDP packet */
         udp = mtnf_pkt_udp_hdr(pkt[i]);
         if (udp != NULL) {
@@ -89,10 +86,7 @@ mtnf_aes_encrypt_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
             eth = rte_pktmbuf_mtod(pkt[i], uint8_t *);
             hlen = pkt_data - eth;
             plen = pkt[i]->pkt_len - hlen;
-            printf("hlen: %u, plen: %u\n", hlen, plen);
-            printf("pkt_data: %lu, eth: %lu", (uint64_t)pkt_data, (uint64_t)eth);
-
-
+            
             aes_encrypt_ctr(pkt_data, plen, tmp_data, stats->key_schedule, 256, iv[0]);
             num_out ++;
             continue;
@@ -106,11 +100,8 @@ mtnf_aes_encrypt_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
             eth = rte_pktmbuf_mtod(pkt[i], uint8_t *);
             hlen = pkt_data - eth;
             plen = pkt[i]->pkt_len - hlen;
-            printf("hlen: %u, plen: %u\n", hlen, plen);
-            printf("pkt_data: %lu, eth: %lu", (uint64_t)pkt_data, (uint64_t)eth);
 
             aes_encrypt_ctr(pkt_data, plen, tmp_data, stats->key_schedule, 256, iv[0]);
-            printf("processed %d\n", (int)i);
             num_out ++;
         }
 	}
