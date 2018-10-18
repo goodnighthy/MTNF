@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include <rte_common.h>
 #include <rte_mbuf.h>

@@ -74,7 +74,7 @@ mtnf_hash_val(struct ipv4_5tuple* tmp_turple) {
 /* hash set insert */
 static void
 mtnf_hash_insert(struct firewall_statistics* stats, struct ipv4_firewall_hash_entry* entry) {
-    uint32_t index = mtnf_hash_val(entry->key);
+    uint32_t index = mtnf_hash_val(&entry->key);
     struct hash_node* ptr = &(stats->hash_map[index]);
     if (!ptr->is_valid) {
         ptr->is_valid = true;
@@ -87,7 +87,7 @@ mtnf_hash_insert(struct firewall_statistics* stats, struct ipv4_firewall_hash_en
     } else {
         while (ptr->next != NULL)
             ptr = ptr->next;
-        ptr->next = new struct hash_node;
+        ptr->next = (struct hash_node*)malloc(sizeof(struct hash_node));
         ptr = ptr->next;
         ptr->is_valid = true;
         ptr->ip_src = entry->key.ip_src;
@@ -110,7 +110,7 @@ mtnf_hash_lookup(struct firewall_statistics* stats, struct ipv4_5tuple* key) {
 
     while (ptr != NULL) {
         if (ptr->ip_src == key->ip_src && ptr->ip_dst == key->ip_dst && \
-            ptr->port_srt == key->port_src && ptr->port_dst == key->port_dst && \
+            ptr->port_src == key->port_src && ptr->port_dst == key->port_dst && \
             ptr->proto == key->proto) {
             action = ptr->action;
             found = true;
@@ -136,7 +136,7 @@ mtnf_firewall_init(void *state) {
     uint32_t i;
     for (i = 0; i < BIG_PRIME; i ++) {
         stats->hash_map[i].next = NULL;
-        stats->hash_map[i].valid = false;
+        stats->hash_map[i].is_valid = false;
     }
 }
 
@@ -152,11 +152,11 @@ mtnf_firewall_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 	stats = (struct firewall_statistics *)state;
 	num_out = 0;
 	for (i = 0; i < num; i++) {
-        ipv4_hdr = mtnf_pkt_ipv4_hdr(pkt[i]);
-        firewall_fill_ipv4_5tuple_key(key, ipv4hdr);
+        ipv4hdr = mtnf_pkt_ipv4_hdr(pkt[i]);
+        firewall_fill_ipv4_5tuple_key(&key, ipv4hdr);
         ret = mtnf_hash_lookup(stats, &key);
         if (ret == PASS)
-            num_out = ++;
+            num_out++;
 	}
 
 	return num_out;
