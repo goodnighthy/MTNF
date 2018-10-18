@@ -7,6 +7,7 @@
 #include "mtnf_aes_encrypt.h"
 #include "mtnf_aes_decrypt.h"
 #include "mtnf_firewall.h"
+#include "mtnf_ids.h"
 
 #include "mtnf_common.h"
 #include "mtnf_args.h"
