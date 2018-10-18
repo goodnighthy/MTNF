@@ -41,7 +41,7 @@ mtnf_pkt_tcp_hdr(struct rte_mbuf *pkt) {
         return NULL;
     }
 
-    tcp = (struct tcp_hdr *)rte_pktmbuf_mtod(pkt, uint8_t *) + sizeof(struct ether_hdr) + sizeof(struct ipv4_hdr);
+    tcp = (struct tcp_hdr *)(rte_pktmbuf_mtod(pkt, uint8_t *) + sizeof(struct ether_hdr) + sizeof(struct ipv4_hdr));
 
     return tcp;
 }
@@ -59,7 +59,7 @@ mtnf_pkt_udp_hdr(struct rte_mbuf *pkt) {
         return NULL;
     }
 
-    udp = (struct udp_hdr *)rte_pktmbuf_mtod(pkt, uint8_t *) + sizeof(struct ether_hdr) + sizeof(struct ipv4_hdr);
+    udp = (struct udp_hdr *)(rte_pktmbuf_mtod(pkt, uint8_t *) + sizeof(struct ether_hdr) + sizeof(struct ipv4_hdr));
 
     return udp;
 }
@@ -182,7 +182,7 @@ mtnf_pkt_print_ipv4(struct ipv4_hdr* hdr) {
 
 void
 mtnf_pkt_print_tcp(struct tcp_hdr* hdr) {
-    printf("Source Port: %" PRIu16 "\n", rte_be_to_cpu_16(hdr->src_port));
+    printf("Source Port??????: %u\n", rte_be_to_cpu_16(hdr->src_port));
     printf("Destination Port: %" PRIu16 "\n", rte_be_to_cpu_16(hdr->dst_port));
     printf("Sequence number: %" PRIu32 "\n", rte_be_to_cpu_32(hdr->sent_seq));
     printf("Acknowledgement number: %" PRIu32 "\n", rte_be_to_cpu_32(hdr->recv_ack));
@@ -213,10 +213,11 @@ mtnf_pkt_print_tcp(struct tcp_hdr* hdr) {
 
 void
 mtnf_pkt_print_udp(struct udp_hdr* hdr) {
-    printf("Source Port: %" PRIu16 "\n", hdr->src_port);
-    printf("Destination Port: %" PRIu16 "\n", hdr->dst_port);
-    printf("Length: %" PRIu16 "\n", hdr->dgram_len);
-    printf("Checksum: %" PRIu16 "\n", hdr->dgram_cksum);
+//    printf("Source Port??????: %u\n", hdr->src_port);
+    printf("Destination Port: %" PRIu16 "\n", rte_be_to_cpu_16(hdr->src_port));
+    printf("Destination Port: %" PRIu16 "\n", rte_be_to_cpu_16(hdr->dst_port));
+    printf("Length: %" PRIu16 "\n", rte_be_to_cpu_16(hdr->dgram_len));
+    printf("Checksum: %" PRIu16 "\n", rte_be_to_cpu_16(hdr->dgram_cksum));
 }
 
 void

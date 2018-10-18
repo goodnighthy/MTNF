@@ -51,6 +51,7 @@ worker_thread(void *arg) {
 
         for (i = 0; i < nb_rx; i++) {
             rte_prefetch0(rte_pktmbuf_mtod(pkts[i], void *));
+//            mtnf_pkt_print(pkts[i]);
             tenant_id = get_tenant_id(pkts[i]);
             buffers[tenant_id].buffer_slot[buffers[tenant_id].num++] = pkts[i];
 
