@@ -23,21 +23,13 @@
 
 #include "mtnf_help.h"
 
-#define FIREWALL_HASH_ENTRIES 1024
 #define BIG_PRIME 10000019
-
-struct bf_node {
-    uint32_t ip_src, ip_dst;
-    uint16_t port_src, port_dst;
-    uint8_t proto, action;
-};
 
 struct hash_node {
     uint32_t ip_src, ip_dst;
     uint16_t port_src, port_dst;
     uint8_t proto, action;
     bool is_valid;
-    struct hash_node* next;
 };
 
 struct firewall_statistics {
