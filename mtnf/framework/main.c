@@ -22,7 +22,7 @@
 
 #define RTE_LOGTYPE_MTNF          RTE_LOGTYPE_USER1
 #define MAX_PKT_BURST 32
-#define MAX_PKT_BUFFER 64
+#define MAX_PKT_BUFFER 32
 #define BUFFER_SIZE 128
 
 /* test time latency */
@@ -135,8 +135,8 @@ master_thread(void) {
             buffer_sum += buffer_time_slot[i];
             process_sum += process_time_slot[i];
         }
-        printf("buffer latency: %lu, process latency: %lu", \
-            buffer_sum / buffer_odd_cnt, process_sum / buffer_odd_cnt);
+        printf("buffer latency: %f, process latency: %f", \
+            (double)buffer_sum / buffer_odd_cnt, (double)process_sum / buffer_odd_cnt);
     }
 
     RTE_LOG(INFO, MTNF, "Core %d: Master thread done\n", rte_lcore_id());
