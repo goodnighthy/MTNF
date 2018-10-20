@@ -17,8 +17,8 @@ function configure(parser)
 	parser:description("Generates UDP traffic and measure latencies. Edit the source to modify constants like IPs.")
 	parser:argument("DevNo0", "Device Number 0."):convert(tonumber)
 	parser:argument("DevNo1", "Device Number 1."):convert(tonumber)
-	parser:option("-r --rate", "Transmit rate in Mbit/s."):default(2500):convert(tonumber)
-	parser:option("-f --flows", "Number of flows (randomized source IP)."):default(5):convert(tonumber)
+	parser:option("-r --rate", "Transmit rate in Mbit/s."):default(400):convert(tonumber)
+	parser:option("-f --flows", "Number of flows (randomized source IP)."):default(1):convert(tonumber)
 	parser:option("-o --offset", "Offset of flows (randomized source IP)."):default(5):convert(tonumber)
 	parser:option("-s --size", "Packet size."):default(60):convert(tonumber)
 end
@@ -34,9 +34,9 @@ function master(args)
 		DevNo1:getTxQueue(0):setRate(args.rate - (args.size + 4) * 8 / 1000)
 	end
 	mg.startTask("loadSlave", DevNo0:getTxQueue(0), DevNo0, args.size, args.flows, args.offset * 0)
-	mg.startTask("loadSlave", DevNo1:getTxQueue(0), DevNo1, args.size, args.flows, args.offset * 1)
+	mg.startTask("loadSlave", DevNo1:getTxQueue(0), DevNo1, args.size, args.flows, args.offset * 0)
 	mg.startTask("timerSlave", DevNo0:getTxQueue(1), DevNo0:getRxQueue(1), args.size, args.flows, args.offset * 0)
-	mg.startTask("timerSlave", DevNo1:getTxQueue(1), DevNo1:getRxQueue(1), args.size, args.flows, args.offset * 1)
+	mg.startTask("timerSlave", DevNo1:getTxQueue(1), DevNo1:getRxQueue(1), args.size, args.flows, args.offset * 0)
 	mg.waitForTasks()
 end
 

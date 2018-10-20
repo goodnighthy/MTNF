@@ -63,6 +63,7 @@ table forward {
 }
 
 //==========================================================================================================
+// add time stamp
 
 action do_timestamp() {
     modify_field(ipv4.timestamp, intrinsic_metadata.ingress_global_timestamp);
@@ -75,6 +76,7 @@ table timestamper {
 }
 
 //==========================================================================================================
+// parse time stamp
 
 primitive_action primitive_parsetime();
 
@@ -91,11 +93,11 @@ table timeparser {
 //==========================================================================================================
 control ingress {
 	if (standard_metadata.ingress_port == 0 or standard_metadata.ingress_port == 1) {
+//        apply(timestamper);
 		apply(classifier);
 		apply(dispatcher);
-        apply(timestamper);
+//        apply(timeparser);
 	} else {
-        apply(timeparser);
 		apply(forward);
 	}
 }

@@ -22,7 +22,7 @@
                     "action": {
                         "data": {
                             "port": {
-                                "value": "p1"
+                                "value": "p0"
                             }
                         }, 
                         "type": "do_forward"
@@ -38,7 +38,7 @@
                     "action": {
                         "data": {
                             "port": {
-                                "value": "v0.0"
+                                "value": "p0"
                             }
                         }, 
                         "type": "do_forward"
@@ -46,7 +46,7 @@
                     "name": "rule_2", 
                     "match": {
                         "standard_metadata.ingress_port": {
-                            "value": "p0"
+                            "value": "v0.2"
                         }
                     }
                 }, 
@@ -54,7 +54,7 @@
                     "action": {
                         "data": {
                             "port": {
-                                "value": "v0.1"
+                                "value": "p0"
                             }
                         }, 
                         "type": "do_forward"
@@ -62,7 +62,7 @@
                     "name": "rule_3", 
                     "match": {
                         "standard_metadata.ingress_port": {
-                            "value": "p1"
+                            "value": "v0.3"
                         }
                     }
                 }
@@ -70,14 +70,6 @@
             "default_rule": {
                 "action": {
                     "type": "do_drop"
-                }, 
-                "name": "default"
-            }
-        }, 
-        "timeparser": {
-            "default_rule": {
-                "action": {
-                    "type": "do_parsetime"
                 }, 
                 "name": "default"
             }
@@ -248,7 +240,7 @@
                     "action": {
                         "data": {
                             "port": {
-                                "value": "v0.1"
+                                "value": "v0.0"
                             }
                         }, 
                         "type": "do_dispatch"
@@ -261,14 +253,6 @@
                     }
                 }
             ]
-        }, 
-        "timestamper": {
-            "default_rule": {
-                "action": {
-                    "type": "do_timestamp"
-                }, 
-                "name": "default"
-            }
         }, 
         "classifier": {
             "rules": [
