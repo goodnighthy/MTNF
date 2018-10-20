@@ -22,7 +22,7 @@
                     "action": {
                         "data": {
                             "port": {
-                                "value": "p0"
+                                "value": "p1"
                             }
                         }, 
                         "type": "do_forward"
@@ -38,7 +38,7 @@
                     "action": {
                         "data": {
                             "port": {
-                                "value": "p1"
+                                "value": "v0.0"
                             }
                         }, 
                         "type": "do_forward"
@@ -46,7 +46,7 @@
                     "name": "rule_2", 
                     "match": {
                         "standard_metadata.ingress_port": {
-                            "value": "v0.2"
+                            "value": "p0"
                         }
                     }
                 }, 
@@ -54,7 +54,7 @@
                     "action": {
                         "data": {
                             "port": {
-                                "value": "p1"
+                                "value": "v0.1"
                             }
                         }, 
                         "type": "do_forward"
@@ -62,7 +62,7 @@
                     "name": "rule_3", 
                     "match": {
                         "standard_metadata.ingress_port": {
-                            "value": "v0.3"
+                            "value": "p1"
                         }
                     }
                 }
@@ -74,10 +74,198 @@
                 "name": "default"
             }
         }, 
-        "dispatcher": {
+        "timeparser": {
             "default_rule": {
                 "action": {
-                    "type": "do_dispatch"
+                    "type": "do_parsetime"
+                }, 
+                "name": "default"
+            }
+        }, 
+        "dispatcher": {
+            "rules": [
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant1", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "1"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant2", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "2"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant3", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "3"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant4", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "4"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant5", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "5"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant6", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "6"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant7", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "7"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant8", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "8"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant9", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "9"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.0"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant10", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "10"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "port": {
+                                "value": "v0.1"
+                            }
+                        }, 
+                        "type": "do_dispatch"
+                    }, 
+                    "name": "tenant0", 
+                    "match": {
+                        "ipv4.diffserv": {
+                            "value": "0"
+                        }
+                    }
+                }
+            ]
+        }, 
+        "timestamper": {
+            "default_rule": {
+                "action": {
+                    "type": "do_timestamp"
                 }, 
                 "name": "default"
             }
@@ -93,19 +281,16 @@
                         }, 
                         "type": "tag_attach"
                     }, 
-                    "name": "rule_0", 
+                    "name": "port_rule0", 
                     "match": {
                         "ipv4.srcAddr": {
-                            "value": "192.168.0.1"
+                            "value": "192.168.1.1"
                         }, 
                         "transport.dstPort": {
                             "value": "5678"
                         }, 
                         "ipv4.dstAddr": {
-                            "value": "192.168.1.1"
-                        }, 
-                        "ipv4.protocol": {
-                            "value": "6"
+                            "value": "192.168.0.1"
                         }, 
                         "transport.srcPort": {
                             "value": "1234"
@@ -121,19 +306,16 @@
                         }, 
                         "type": "tag_attach"
                     }, 
-                    "name": "rule_1", 
+                    "name": "port_rule1", 
                     "match": {
                         "ipv4.srcAddr": {
-                            "value": "192.168.1.1"
+                            "value": "192.168.0.1"
                         }, 
                         "transport.dstPort": {
                             "value": "5678"
                         }, 
                         "ipv4.dstAddr": {
-                            "value": "192.168.0.1"
-                        }, 
-                        "ipv4.protocol": {
-                            "value": "6"
+                            "value": "192.168.1.1"
                         }, 
                         "transport.srcPort": {
                             "value": "1234"
@@ -149,19 +331,16 @@
                         }, 
                         "type": "tag_attach"
                     }, 
-                    "name": "ruel_2", 
+                    "name": "port_rule2", 
                     "match": {
                         "ipv4.srcAddr": {
-                            "value": "192.168.2.1"
+                            "value": "192.168.0.2"
                         }, 
                         "transport.dstPort": {
                             "value": "5678"
                         }, 
                         "ipv4.dstAddr": {
-                            "value": "192.168.3.1"
-                        }, 
-                        "ipv4.protocol": {
-                            "value": "6"
+                            "value": "192.168.1.1"
                         }, 
                         "transport.srcPort": {
                             "value": "1234"
@@ -177,32 +356,198 @@
                         }, 
                         "type": "tag_attach"
                     }, 
-                    "name": "rule_3", 
+                    "name": "port_rule3", 
                     "match": {
                         "ipv4.srcAddr": {
-                            "value": "192.168.3.1"
+                            "value": "192.168.0.3"
                         }, 
                         "transport.dstPort": {
                             "value": "5678"
                         }, 
                         "ipv4.dstAddr": {
-                            "value": "192.168.2.1"
+                            "value": "192.168.1.1"
                         }, 
-                        "ipv4.protocol": {
-                            "value": "6"
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "4"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "port_rule4", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.0.4"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.1.1"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "5"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "port_rule5", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.0.5"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.1.1"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "6"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "port_rule6", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.0.6"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.1.1"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "7"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "port_rule7", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.0.7"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.1.1"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "8"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "port_rule8", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.0.8"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.1.1"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "9"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "port_rule9", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.0.9"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.1.1"
+                        }, 
+                        "transport.srcPort": {
+                            "value": "1234"
+                        }
+                    }
+                }, 
+                {
+                    "action": {
+                        "data": {
+                            "tid": {
+                                "value": "10"
+                            }
+                        }, 
+                        "type": "tag_attach"
+                    }, 
+                    "name": "port_rule10", 
+                    "match": {
+                        "ipv4.srcAddr": {
+                            "value": "192.168.0.10"
+                        }, 
+                        "transport.dstPort": {
+                            "value": "5678"
+                        }, 
+                        "ipv4.dstAddr": {
+                            "value": "192.168.1.1"
                         }, 
                         "transport.srcPort": {
                             "value": "1234"
                         }
                     }
                 }
-            ], 
-            "default_rule": {
-                "action": {
-                    "type": "do_drop"
-                }, 
-                "name": "default"
-            }
+            ]
         }
     }
 }

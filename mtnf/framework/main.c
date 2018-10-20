@@ -25,6 +25,14 @@
 #define MAX_PKT_BUFFER 64
 #define BUFFER_SIZE 128
 
+/* test time latency */
+#include <sys/time.h>
+#define TIMESLOT_NUM 10000
+static unsigned long process_time_slot[TIMESLOT_NUM];
+static unsigned long buffer_time_slot[TIMESLOT_NUM];
+static unsigned long start_usec, end_usec;
+static int buffer_odd_cnt;
+
 static volatile bool keep_running = 1;
 
 static void
@@ -41,6 +49,10 @@ worker_thread(void *arg) {
 	struct rte_mbuf *pkts[PACKET_READ_SIZE];
 	struct worker_info *worker_info = (struct worker_info *)arg;
 
+    /* test time latency */
+    struct timeval start[2], end_process;
+    buffer_odd_cnt = -1;
+
 	port_id = ports->id[worker_info->id];
 
 	RTE_LOG(INFO, MTNF, "Core %d: Running worker thread\n", rte_lcore_id());
@@ -51,15 +63,39 @@ worker_thread(void *arg) {
 
         for (i = 0; i < nb_rx; i++) {
             rte_prefetch0(rte_pktmbuf_mtod(pkts[i], void *));
+            
 //            mtnf_pkt_print(pkts[i]);
+
             tenant_id = get_tenant_id(pkts[i]);
             buffers[tenant_id].buffer_slot[buffers[tenant_id].num++] = pkts[i];
 
             if (buffers[tenant_id].num == MAX_PKT_BUFFER) {
+                /* test time latenct */
+                /* get buffer time */
+                if (buffer_odd_cnt == -1) {
+                    gettimeofday(&start[1], NULL);
+                } else {
+                    gettimeofday(&start[buffer_odd_cnt % 2], NULL);
+                    start_usec = start[(buffer_odd_cnt + 1) % 2].tv_usec;
+                    end_usec = start[buffer_odd_cnt % 2].tv_usec;
+                    if (start_usec > end_usec)
+                        end_usec += 1000000;
+                    buffer_time_slot[buffer_odd_cnt] = (end_usec - start_usec);
+                }
+                buffer_odd_cnt = (buffer_odd_cnt + 1) % TIMESLOT_NUM;
+
                 tenants[tenant_id].stats.rx += buffers[tenant_id].num;
 
                 /* handle by network function */
                 nb_handler = mtnf_packets_handler(&buffers[tenant_id], tenant_id);
+
+                /* get the time of processing */
+                gettimeofday(&end_process, NULL);
+                end_usec = end_process.tv_usec;
+                start_usec = start[(buffer_odd_cnt + 1) % 2].tv_usec;
+                if (start_usec > end_usec)
+                    end_usec += 1000000;
+                process_time_slot[buffer_odd_cnt] = (end_usec - start_usec);
 
                 tenants[tenant_id].stats.tx += nb_handler;
 
@@ -92,6 +128,15 @@ master_thread(void) {
     /* Loop forever: sleep always returns 0 or <= param */
     while (keep_running && sleep(sleeptime) <= sleeptime) {
         mtnf_stats_display_all(sleeptime, ports, tenants);
+        /* test time latency */
+        int i;
+        uint64_t buffer_sum = 0, process_sum = 0;
+        for (i = 0; i < buffer_odd_cnt; i ++) {
+            buffer_sum += buffer_time_slot[i];
+            process_sum += process_time_slot[i];
+        }
+        printf("buffer latency: %lu, process latency: %lu", \
+            buffer_sum / buffer_odd_cnt, process_sum / buffer_odd_cnt);
     }
 
     RTE_LOG(INFO, MTNF, "Core %d: Master thread done\n", rte_lcore_id());
