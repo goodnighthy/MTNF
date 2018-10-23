@@ -1,10 +1,10 @@
- #include "includes/headers.p4"
- #include "includes/metadata.p4"
- #include "includes/parser.p4"
+ // #include "includes/headers.p4"
+ // #include "includes/metadata.p4"
+ // #include "includes/parser.p4"
 
-//#include "headers.p4"
-//#include "metadata.p4"
-//#include "parser.p4"
+#include "headers.p4"
+#include "metadata.p4"
+#include "parser.p4"
 //==========================================================================================================
 action do_drop() {
 	drop();
@@ -33,18 +33,29 @@ table classifier {
 
 primitive_action primitive_dispatch();
 
-action do_dispatch(port) {
+action do_dispatch() {
 	primitive_dispatch();
-	modify_field(standard_metadata.egress_spec, port);
 }
 
 table dispatcher {
-	reads {
-		ipv4.diffserv : exact;
-	}
 	actions {
 		do_dispatch;
 	}
+}
+
+//==========================================================================================================
+
+action do_dispatch_forward(port) {
+    modify_field(standard_metadata.egress_spec, port);
+}
+
+table dispatch_forward {
+    reads {
+        dispatch_metadata.worker_id : exact;
+    }
+    actions {
+		do_dispatch_forward;
+    }
 }
 
 //==========================================================================================================
@@ -96,6 +107,7 @@ control ingress {
 //        apply(timestamper);
 		apply(classifier);
 		apply(dispatcher);
+		apply(dispatch_forward);
 //        apply(timeparser);
 	} else {
 		apply(forward);
