@@ -1,0 +1,1 @@
+scp -r container_fn ubuntu@101.6.30.51:/home/ubuntu/
