@@ -527,7 +527,7 @@ main(int argc, char **argv)
 	int ret;
 	uint16_t nb_ports;
 	uint16_t nb_ports_available = 0;
-	uint16_t portid;
+	uint16_t portid, last_port;
 	unsigned lcore_id, rx_lcore_id;
 	unsigned nb_ports_in_mask = 0;
 	unsigned int nb_lcores = 0;
@@ -567,6 +567,7 @@ main(int argc, char **argv)
 	for (portid = 0; portid < RTE_MAX_ETHPORTS; portid++)
 		l2fwd_dst_ports[portid] = 0;
 
+	last_port = 0;
 	/*
 	 * Each logical core is assigned a dedicated TX queue on each port.
 	 */
@@ -575,20 +576,19 @@ main(int argc, char **argv)
 		if ((l2fwd_enabled_port_mask & (1 << portid)) == 0)
 			continue;
 
-		/*
 		if (nb_ports_in_mask % 2) {
 			l2fwd_dst_ports[portid] = last_port;
 			l2fwd_dst_ports[last_port] = portid;
 		}
 		else
 			last_port = portid;
-		*/
-		l2fwd_dst_ports[portid] = portid;
+
+//		l2fwd_dst_ports[portid] = portid;
 		nb_ports_in_mask++;
 	}
 	if (nb_ports_in_mask % 2) {
 		printf("Notice: odd number of ports in portmask.\n");
-//		l2fwd_dst_ports[last_port] = last_port;
+		l2fwd_dst_ports[last_port] = last_port;
 	}
 
 	rx_lcore_id = 0;

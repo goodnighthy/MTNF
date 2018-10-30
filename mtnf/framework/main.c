@@ -107,12 +107,13 @@ worker_thread(void *arg) {
 
                 tenants[tenant_id].stats.tx += nb_handler;
 
-                nb_tx = rte_eth_tx_burst(port_id, 0, buffers[tenant_id].buffer_slot, nb_handler);
+//                pktmbuf_free_bulk(&buffers[tenant_id].buffer_slot[0], nb_handler);
+                nb_tx = rte_eth_tx_burst(port_id + 2, 0, buffers[tenant_id].buffer_slot, nb_handler);
                 if (unlikely(nb_tx < nb_handler)) {
                     pktmbuf_free_bulk(&buffers[tenant_id].buffer_slot[nb_tx], nb_handler - nb_tx);
-                    ports->stats[port_id].tx_drop += (nb_handler - nb_tx);
+                    ports->stats[port_id + 2].tx_drop += (nb_handler - nb_tx);
                 }
-                ports->stats[port_id].tx += nb_tx;
+                ports->stats[port_id + 2].tx += nb_tx;
             }
         }
 
