@@ -12,6 +12,7 @@ struct monitor_statistics
 {
 	uint64_t tcp_num;
 	uint64_t udp_num;
+	uint16_t len_cnt[17];
 };
 
 /* register tenant state */
