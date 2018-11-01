@@ -40,7 +40,7 @@ mtnf_kmp(struct ids_statistics* stats, char* str) {
         i = 0;
         j = 0;
         p_len = strlen(p);
-        while (i < s_len && j < p_len)
+        while (i < s_len / 5 && j < p_len)
         {
             if (j == -1 || str[i] == p[j])  // P 的第一个字符不匹配或 S[i] == P[j]
             {
@@ -69,7 +69,7 @@ void mtnf_ids_init(void *state) {
 
     int index, j;
     for (index = 0; index < IDS_RULE_NUM; index ++) {
-        for (j = 0; j < 100; j ++) {
+        for (j = 0; j < 50; j ++) {
             stats->str[index][j] = 'a' + (j % 26);
         }
         mtnf_get_next(stats);
