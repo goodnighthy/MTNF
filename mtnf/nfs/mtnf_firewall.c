@@ -24,7 +24,7 @@ struct ipv4_firewall_hash_entry {
 static uint32_t rule_number = 4;
 static struct ipv4_firewall_hash_entry ipv4_firewall_hash_entry_array[] = {
         {{50463234,        16885952,         9,9,IPPROTO_UDP}, PASS},
-        {{16885952, 16820416, 5678, 1234, IPPROTO_TCP}, DROP},
+        {{16885952, 16820416, 5678, 1234, IPPROTO_TCP}, PASS},
         {{IPv4(111,0,0,0), IPv4(100,30,0,1),  101, 11, IPPROTO_TCP}, PASS},
         {{IPv4(211,0,0,0), IPv4(200,40,0,1),  102, 12, IPPROTO_TCP}, PASS},
 };
