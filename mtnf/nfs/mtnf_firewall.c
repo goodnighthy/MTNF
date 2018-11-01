@@ -69,7 +69,13 @@ mtnf_hash_val(struct ipv4_5tuple* tmp_turple) {
 static void
 mtnf_hash_insert(struct firewall_statistics* stats, struct ipv4_firewall_hash_entry* entry) {
     uint32_t index = mtnf_hash_val(&entry->key);
-    struct hash_node* ptr = &(stats->hash_map[index]);
+    uint16_t p = 0;
+    while ((p < BUCKET_SIZE) && stats->hash_map[index][p].is_valid)
+        p ++;
+    if (p == BUCKET_SIZE)
+        p = 0;
+
+    struct hash_node* ptr = &(stats->hash_map[index][p]);
     ptr->is_valid = true;
     ptr->ip_src = entry->key.ip_src;
     ptr->ip_dst = entry->key.ip_dst;
@@ -84,14 +90,21 @@ static int
 mtnf_hash_lookup(struct firewall_statistics* stats, struct ipv4_5tuple* key) {
     uint32_t index = mtnf_hash_val(key);
     bool found = false;
-    uint8_t action;
-    struct hash_node ptr = stats->hash_map[index];
+    uint8_t action = PASS;
+    struct hash_node ptr;
 
-    if (ptr.ip_src == key->ip_src && ptr.ip_dst == key->ip_dst && \
-    ptr.port_src == key->port_src && ptr.port_dst == key->port_dst && \
-    ptr.proto == key->proto && ptr.is_valid) {
-        action = ptr.action;
-        found = true;
+    uint16_t i = 0;
+
+    for (i = 0; i < BUCKET_SIZE; i ++) {
+        ptr = stats->hash_map[index][i];
+        if (ptr.is_valid) {
+            if (ptr.ip_src == key->ip_src && ptr.ip_dst == key->ip_dst && \
+            ptr.port_src == key->port_src && ptr.port_dst == key->port_dst && \
+            ptr.proto == key->proto) {
+                action = ptr.action;
+                found = true;
+            }
+        }
     }
 
     // logic here could be modified
@@ -116,9 +129,11 @@ mtnf_firewall_init(void *state) {
 
 	stats = (struct firewall_statistics *)state;
 
-    uint32_t i;
+    uint32_t i, j;
     for (i = 0; i < BIG_PRIME; i ++) {
-        stats->hash_map[i].is_valid = false;
+        for (j = 0; j < BUCKET_SIZE; j ++) {
+            stats->hash_map[i][j].is_valid = false;
+        }
     }
 
     for (i = 0; i < rule_number; i ++) {

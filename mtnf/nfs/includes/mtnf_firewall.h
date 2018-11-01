@@ -23,7 +23,8 @@
 
 #include "mtnf_help.h"
 
-#define BIG_PRIME 10000019
+#define BIG_PRIME 10019
+#define BUCKET_SIZE 300
 
 struct hash_node {
     uint32_t ip_src, ip_dst;
@@ -33,7 +34,7 @@ struct hash_node {
 };
 
 struct firewall_statistics {
-    struct hash_node hash_map[BIG_PRIME];
+    struct hash_node hash_map[BIG_PRIME][BUCKET_SIZE];
 };
 
 /* register tenant state */
