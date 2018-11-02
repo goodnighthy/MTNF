@@ -26,9 +26,15 @@ local function doWait(port, waitTime)
     end
 end
 
--- local function vary
+local function genRandomFlow()
+--    pktgen.delay(5000);
+    local rate = math.random(10);
+    pktgen.set("all", "rate", rate * 10);
+    pktgen.delay(5000);
+end
 
-pktgen.reset("all");
+-- local function vary
+math.randomseed(os.time());
 
 pktgen.delay(1000);
 pktgen.src_ip("all", "start", "192.168.0.1");
@@ -36,5 +42,15 @@ pktgen.dst_ip("all", "start", "192.168.1.1");
 pktgen.set_type("all", "ipv4");
 pktgen.set_proto("all", "udp");
 
+-- pktgen.pkt_size("all", "start", 64);
+-- pktgen.pkt_size("all", "inc", 16);
+-- pktgen.pkt_size("all", "min", 64);
+-- pktgen.pkt_size("all", "max", 1518);
+
 pktgen.start("all");
-pktgen.doWait("all", 1);
+-- pktgen.doWait("all", 1);
+
+for i = 1, 10, 1 do
+    genRandomFlow();
+end
+

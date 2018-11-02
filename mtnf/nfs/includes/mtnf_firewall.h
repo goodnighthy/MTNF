@@ -24,7 +24,7 @@
 #include "mtnf_help.h"
 
 #define BIG_PRIME 10019
-#define BUCKET_SIZE 300
+#define BUCKET_SIZE 350
 
 struct hash_node {
     uint32_t ip_src, ip_dst;

@@ -80,7 +80,7 @@ struct lcore_queue_conf {
 } __rte_cache_aligned;
 struct lcore_queue_conf lcore_queue_conf[RTE_MAX_LCORE];
 
-static struct rte_eth_dev_tx_buffer *tx_buffer[RTE_MAX_ETHPORTS];
+static struct rte_mbuf *tx_buffer[MAX_PKT_BURST];
 
 static struct rte_eth_conf port_conf = {
 	.rxmode = {
@@ -182,8 +182,8 @@ static void
 l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
 {
 	unsigned dst_port;
-	int sent;
-	struct rte_eth_dev_tx_buffer *buffer;
+//	int sent;
+//	struct rte_eth_dev_tx_buffer *buffer;
 
 	dst_port = l2fwd_dst_ports[portid];
 
@@ -220,17 +220,18 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
             aes_encrypt_ctr(pkt_data, plen, tmp_data, port_statistics[dst_port].key_schedule, 256, iv[0]);
         }
 	}
-	
+	/*
 	buffer = tx_buffer[dst_port];
 	sent = rte_eth_tx_buffer(dst_port, 0, buffer, m);
 	if (sent)
-		port_statistics[dst_port].tx += sent;
+		port_statistics[dst_port].tx += sent;*/
 }
 
 /* main processing loop */
 static void
 l2fwd_main_loop(void)
 {
+	int my_cnt = 0;
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	struct rte_mbuf *m;
 	int sent;
@@ -240,7 +241,7 @@ l2fwd_main_loop(void)
 	struct lcore_queue_conf *qconf;
 	const uint64_t drain_tsc = (rte_get_tsc_hz() + US_PER_S - 1) / US_PER_S *
 			BURST_TX_DRAIN_US;
-	struct rte_eth_dev_tx_buffer *buffer;
+//	struct rte_eth_dev_tx_buffer *buffer;
 
 	prev_tsc = 0;
 	timer_tsc = 0;
@@ -273,7 +274,7 @@ l2fwd_main_loop(void)
 		diff_tsc = cur_tsc - prev_tsc;
 		if (unlikely(diff_tsc > drain_tsc)) {
 
-			for (i = 0; i < qconf->n_rx_port; i++) {
+/*			for (i = 0; i < qconf->n_rx_port; i++) {
 
 				portid = l2fwd_dst_ports[qconf->rx_port_list[i]];
 				buffer = tx_buffer[portid];
@@ -283,7 +284,7 @@ l2fwd_main_loop(void)
 					port_statistics[portid].tx += sent;
 
 			}
-
+*/
 			/* if timer is enabled */
 			if (timer_period > 0) {
 
@@ -320,6 +321,15 @@ l2fwd_main_loop(void)
 				m = pkts_burst[j];
 				rte_prefetch0(rte_pktmbuf_mtod(m, void *));
 				l2fwd_simple_forward(m, portid);
+
+				tx_buffer[my_cnt] = m;
+				my_cnt ++;
+				if (my_cnt == MAX_PKT_BURST) {
+					sent = rte_eth_tx_burst(portid, 0, tx_buffer, MAX_PKT_BURST);
+					my_cnt = 0;
+					if (sent)
+						port_statistics[portid].tx += sent;
+				}
 			}
 		}
 	}
@@ -725,7 +735,7 @@ main(int argc, char **argv)
 				ret, portid);
 
 		/* Initialize TX buffers */
-		tx_buffer[portid] = rte_zmalloc_socket("tx_buffer",
+/*		tx_buffer[portid] = rte_zmalloc_socket("tx_buffer",
 				RTE_ETH_TX_BUFFER_SIZE(MAX_PKT_BURST), 0,
 				rte_eth_dev_socket_id(portid));
 		if (tx_buffer[portid] == NULL)
@@ -741,7 +751,7 @@ main(int argc, char **argv)
 			rte_exit(EXIT_FAILURE,
 			"Cannot set error callback for tx buffer on port %u\n",
 				 portid);
-
+*/
 		/* Start device */
 		ret = rte_eth_dev_start(portid);
 		if (ret < 0)

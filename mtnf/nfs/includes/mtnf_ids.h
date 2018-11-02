@@ -10,11 +10,12 @@
 
 #include "mtnf_help.h"
 
-#define IDS_RULE_NUM 3
+#define IDS_RULE_NUM 4
+#define STR_LEN 50
 
 struct ids_statistics {
-	char str[3][50];
-	int next[3][50];
+	char str[IDS_RULE_NUM][STR_LEN];
+	int next[IDS_RULE_NUM][STR_LEN];
 };
 
 /* register tenant state */

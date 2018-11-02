@@ -79,7 +79,7 @@ struct lcore_queue_conf {
 } __rte_cache_aligned;
 struct lcore_queue_conf lcore_queue_conf[RTE_MAX_LCORE];
 
-static struct rte_eth_dev_tx_buffer *tx_buffer[RTE_MAX_ETHPORTS];
+static struct rte_mbuf *tx_buffer[MAX_PKT_BURST];
 
 static struct rte_eth_conf port_conf = {
 	.rxmode = {
@@ -106,10 +106,10 @@ struct l2fwd_port_statistics port_statistics[RTE_MAX_ETHPORTS];
 /* A tsc-based timer responsible for triggering statistics printout */
 static uint64_t timer_period = 10; /* default period is 10 seconds */
 
-#define IDS_RULE_NUM 6
+#define IDS_RULE_NUM 4
 
-static char str[6][100];
-static int next[6][100];
+static char str[IDS_RULE_NUM][50];
+static int next[IDS_RULE_NUM][50];
 
 static void
 mtnf_get_next(void) {
@@ -143,6 +143,7 @@ mtnf_kmp(char* _str) {
     int p_len, s_len = strlen(_str);
     char* p;
     int* _next;
+    bool found = false;
 
     index = 0;
     for (index = 0; index < IDS_RULE_NUM; index ++) {
@@ -151,7 +152,7 @@ mtnf_kmp(char* _str) {
         i = 0;
         j = 0;
         p_len = strlen(p);
-        while (i < s_len && j < p_len)
+        while (i < s_len / 5 && j < p_len)
         {
             if (j == -1 || _str[i] == p[j])  // P 的第一个字符不匹配或 S[i] == P[j]
             {
@@ -163,17 +164,22 @@ mtnf_kmp(char* _str) {
         }
 
         if (j == p_len)  // 匹配成功
-            return true;
+            found = true;
     }
-    return false;
+
+	if (found)
+		return true;
+	else
+	    return false;
 }
 
 static void mtnf_ids_init(void) {
     int index, j;
     for (index = 0; index < IDS_RULE_NUM; index ++) {
-        for (j = 0; j < 100; j ++) {
+        for (j = 0; j < 49; j ++) {
             str[index][j] = 'a' + (j % 26);
         }
+        str[index][49] = '\0';
         mtnf_get_next();
     }
 }
@@ -244,8 +250,7 @@ static void
 l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
 {
 	unsigned dst_port;
-	int sent;
-	struct rte_eth_dev_tx_buffer *buffer;
+//	struct rte_eth_dev_tx_buffer *buffer;
     struct udp_hdr *udp;
     struct tcp_hdr *tcp;
 	char* pkt_data;
@@ -278,18 +283,13 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
             };
         }
 	}
-
-
-	buffer = tx_buffer[dst_port];
-	sent = rte_eth_tx_buffer(dst_port, 0, buffer, m);
-	if (sent)
-		port_statistics[dst_port].tx += sent;
 }
 
 /* main processing loop */
 static void
 l2fwd_main_loop(void)
 {
+	int my_cnt = 0;
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	struct rte_mbuf *m;
 	int sent;
@@ -299,7 +299,7 @@ l2fwd_main_loop(void)
 	struct lcore_queue_conf *qconf;
 	const uint64_t drain_tsc = (rte_get_tsc_hz() + US_PER_S - 1) / US_PER_S *
 			BURST_TX_DRAIN_US;
-	struct rte_eth_dev_tx_buffer *buffer;
+//	struct rte_eth_dev_tx_buffer *buffer;
 
 	prev_tsc = 0;
 	timer_tsc = 0;
@@ -331,7 +331,7 @@ l2fwd_main_loop(void)
 		 */
 		diff_tsc = cur_tsc - prev_tsc;
 		if (unlikely(diff_tsc > drain_tsc)) {
-
+/*
 			for (i = 0; i < qconf->n_rx_port; i++) {
 
 				portid = l2fwd_dst_ports[qconf->rx_port_list[i]];
@@ -342,7 +342,7 @@ l2fwd_main_loop(void)
 					port_statistics[portid].tx += sent;
 
 			}
-
+*/
 			/* if timer is enabled */
 			if (timer_period > 0) {
 
@@ -379,6 +379,15 @@ l2fwd_main_loop(void)
 				m = pkts_burst[j];
 				rte_prefetch0(rte_pktmbuf_mtod(m, void *));
 				l2fwd_simple_forward(m, portid);
+
+				tx_buffer[my_cnt] = m;
+				my_cnt ++;
+				if (my_cnt == MAX_PKT_BURST) {
+					sent = rte_eth_tx_burst(portid, 0, tx_buffer, MAX_PKT_BURST);
+					my_cnt = 0;
+					if (sent)
+						port_statistics[portid].tx += sent;
+				}
 			}
 		}
 	}
@@ -783,7 +792,7 @@ main(int argc, char **argv)
 				ret, portid);
 
 		/* Initialize TX buffers */
-		tx_buffer[portid] = rte_zmalloc_socket("tx_buffer",
+/*		tx_buffer[portid] = rte_zmalloc_socket("tx_buffer",
 				RTE_ETH_TX_BUFFER_SIZE(MAX_PKT_BURST), 0,
 				rte_eth_dev_socket_id(portid));
 		if (tx_buffer[portid] == NULL)
@@ -799,7 +808,7 @@ main(int argc, char **argv)
 			rte_exit(EXIT_FAILURE,
 			"Cannot set error callback for tx buffer on port %u\n",
 				 portid);
-
+*/
 		/* Start device */
 		ret = rte_eth_dev_start(portid);
 		if (ret < 0)

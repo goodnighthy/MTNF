@@ -79,7 +79,7 @@ struct lcore_queue_conf {
 } __rte_cache_aligned;
 struct lcore_queue_conf lcore_queue_conf[RTE_MAX_LCORE];
 
-static struct rte_eth_dev_tx_buffer *tx_buffer[RTE_MAX_ETHPORTS];
+static struct rte_mbuf *tx_buffer[MAX_PKT_BURST];
 
 static struct rte_eth_conf port_conf = {
 	.rxmode = {
@@ -94,7 +94,8 @@ static struct rte_eth_conf port_conf = {
 
 struct rte_mempool * l2fwd_pktmbuf_pool = NULL;
 
-#define BIG_PRIME 10000019
+#define BIG_PRIME 10019
+#define BUCKET_SIZE 350
 
 struct hash_node {
     uint32_t ip_src, ip_dst;
@@ -102,7 +103,7 @@ struct hash_node {
     uint8_t proto, action;
     bool is_valid;
 };
-struct hash_node hash_map[BIG_PRIME];
+struct hash_node hash_map[BIG_PRIME][BUCKET_SIZE];
 
 /* Per-port statistics struct */
 struct l2fwd_port_statistics {
@@ -139,7 +140,7 @@ struct ipv4_firewall_hash_entry {
 static uint32_t rule_number = 4;
 static struct ipv4_firewall_hash_entry ipv4_firewall_hash_entry_array[] = {
         {{50463234,        16885952,         9,9,IPPROTO_UDP}, PASS},
-        {{16885952, 16820416, 5678, 1234, IPPROTO_TCP}, DROP},
+        {{16885952, 16820416, 5678, 1234, IPPROTO_TCP}, PASS},
         {{IPv4(111,0,0,0), IPv4(100,30,0,1),  101, 11, IPPROTO_TCP}, PASS},
         {{IPv4(211,0,0,0), IPv4(200,40,0,1),  102, 12, IPPROTO_TCP}, PASS},
 };
@@ -184,7 +185,13 @@ mtnf_hash_val(struct ipv4_5tuple* tmp_turple) {
 static void
 mtnf_hash_insert(struct ipv4_firewall_hash_entry* entry) {
     uint32_t index = mtnf_hash_val(&entry->key);
-    struct hash_node* ptr = &(hash_map[index]);
+    uint16_t p = 0;
+    while ((p < BUCKET_SIZE) && hash_map[index][p].is_valid)
+        p ++;
+    if (p == BUCKET_SIZE)
+        p = 0;
+
+    struct hash_node* ptr = &(hash_map[index][p]);
     ptr->is_valid = true;
     ptr->ip_src = entry->key.ip_src;
     ptr->ip_dst = entry->key.ip_dst;
@@ -199,14 +206,22 @@ static int
 mtnf_hash_lookup(struct ipv4_5tuple* key) {
     uint32_t index = mtnf_hash_val(key);
     bool found = false;
-    uint8_t action;
-    struct hash_node ptr = hash_map[index];
 
-    if (ptr.ip_src == key->ip_src && ptr.ip_dst == key->ip_dst && \
-    ptr.port_src == key->port_src && ptr.port_dst == key->port_dst && \
-    ptr.proto == key->proto && ptr.is_valid) {
-        action = ptr.action;
-        found = true;
+    uint8_t action = PASS;
+    struct hash_node ptr;
+
+    uint16_t i = 0;
+
+    for (i = 0; i < BUCKET_SIZE; i ++) {
+        ptr = hash_map[index][i];
+        if (ptr.is_valid) {
+            if (ptr.ip_src == key->ip_src && ptr.ip_dst == key->ip_dst && \
+            ptr.port_src == key->port_src && ptr.port_dst == key->port_dst && \
+            ptr.proto == key->proto) {
+                action = ptr.action;
+                found = true;
+            }
+        }
     }
 
     // logic here could be modified
@@ -221,9 +236,11 @@ mtnf_hash_lookup(struct ipv4_5tuple* key) {
 /* init tenant state */
 static void
 mtnf_firewall_init(void) {
-    uint32_t i;
+    uint32_t i, j;
     for (i = 0; i < BIG_PRIME; i ++) {
-        hash_map[i].is_valid = false;
+        for (j = 0; j < BUCKET_SIZE; j ++) {
+            hash_map[i][j].is_valid = false;
+        }
     }
 
     for (i = 0; i < rule_number; i ++) {
@@ -297,8 +314,8 @@ static void
 l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
 {
 	unsigned dst_port;
-	int sent;
-	struct rte_eth_dev_tx_buffer *buffer;
+//	int sent;
+//	struct rte_eth_dev_tx_buffer *buffer;
     struct ipv4_hdr* ipv4hdr;
     struct ipv4_5tuple key;
     uint8_t ret;
@@ -313,7 +330,7 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
     ret = mtnf_hash_lookup(&key);
 
     /* drop packets */
-    if (ret == PASS) {
+/*    if (ret == PASS) {
 		buffer = tx_buffer[dst_port];
 		sent = rte_eth_tx_buffer(dst_port, 0, buffer, m);
 		if (sent)
@@ -321,13 +338,14 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
     } else {
         rte_pktmbuf_free(m);
     }
-	
+*/	
 }
 
 /* main processing loop */
 static void
 l2fwd_main_loop(void)
 {
+	int my_cnt = 0;
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	struct rte_mbuf *m;
 	int sent;
@@ -337,7 +355,7 @@ l2fwd_main_loop(void)
 	struct lcore_queue_conf *qconf;
 	const uint64_t drain_tsc = (rte_get_tsc_hz() + US_PER_S - 1) / US_PER_S *
 			BURST_TX_DRAIN_US;
-	struct rte_eth_dev_tx_buffer *buffer;
+//	struct rte_eth_dev_tx_buffer *buffer;
 
 	prev_tsc = 0;
 	timer_tsc = 0;
@@ -369,7 +387,7 @@ l2fwd_main_loop(void)
 		 */
 		diff_tsc = cur_tsc - prev_tsc;
 		if (unlikely(diff_tsc > drain_tsc)) {
-
+/*
 			for (i = 0; i < qconf->n_rx_port; i++) {
 
 				portid = l2fwd_dst_ports[qconf->rx_port_list[i]];
@@ -380,7 +398,7 @@ l2fwd_main_loop(void)
 					port_statistics[portid].tx += sent;
 
 			}
-
+*/
 			/* if timer is enabled */
 			if (timer_period > 0) {
 
@@ -417,6 +435,15 @@ l2fwd_main_loop(void)
 				m = pkts_burst[j];
 				rte_prefetch0(rte_pktmbuf_mtod(m, void *));
 				l2fwd_simple_forward(m, portid);
+
+				tx_buffer[my_cnt] = m;
+				my_cnt ++;
+				if (my_cnt == MAX_PKT_BURST) {
+					sent = rte_eth_tx_burst(portid, 0, tx_buffer, MAX_PKT_BURST);
+					my_cnt = 0;
+					if (sent)
+						port_statistics[portid].tx += sent;
+				}
 			}
 		}
 	}
@@ -822,7 +849,7 @@ main(int argc, char **argv)
 				ret, portid);
 
 		/* Initialize TX buffers */
-		tx_buffer[portid] = rte_zmalloc_socket("tx_buffer",
+/*		tx_buffer[portid] = rte_zmalloc_socket("tx_buffer",
 				RTE_ETH_TX_BUFFER_SIZE(MAX_PKT_BURST), 0,
 				rte_eth_dev_socket_id(portid));
 		if (tx_buffer[portid] == NULL)
@@ -838,7 +865,7 @@ main(int argc, char **argv)
 			rte_exit(EXIT_FAILURE,
 			"Cannot set error callback for tx buffer on port %u\n",
 				 portid);
-
+*/
 		/* Start device */
 		ret = rte_eth_dev_start(portid);
 		if (ret < 0)

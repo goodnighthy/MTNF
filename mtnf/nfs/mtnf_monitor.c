@@ -38,7 +38,7 @@ mtnf_monitor_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 		sum = 0;
 		tmpi = 0;
 		while (tmpi < len) {
-			tmpi += 8;
+			tmpi += 7;
 			sum = stats->len_cnt[len % 17];
 			if (sum % 2 == 1)
 				sum = sum * 11315137 % 141331;

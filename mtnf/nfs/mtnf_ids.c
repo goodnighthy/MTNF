@@ -32,6 +32,7 @@ mtnf_kmp(struct ids_statistics* stats, char* str) {
     int p_len, s_len = strlen(str);
     char* p;
     int* next;
+    bool found = false;
 
     index = 0;
     for (index = 0; index < IDS_RULE_NUM; index ++) {
@@ -52,9 +53,12 @@ mtnf_kmp(struct ids_statistics* stats, char* str) {
         }
 
         if (j == p_len)  // 匹配成功
-            return true;
+            found = true;
     }
-    return false;
+    if (found)
+        return true;
+    else
+        return false;
 }
 
 uint32_t
@@ -69,9 +73,10 @@ void mtnf_ids_init(void *state) {
 
     int index, j;
     for (index = 0; index < IDS_RULE_NUM; index ++) {
-        for (j = 0; j < 50; j ++) {
+        for (j = 0; j < STR_LEN - 1; j ++) {
             stats->str[index][j] = 'a' + (j % 26);
         }
+        stats->str[index][STR_LEN - 1] = '\0';
         mtnf_get_next(stats);
     }
 }
