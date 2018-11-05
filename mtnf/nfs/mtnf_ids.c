@@ -27,9 +27,9 @@ mtnf_get_next(struct ids_statistics* stats) {
 }
 
 static bool
-mtnf_kmp(struct ids_statistics* stats, char* str) {
+mtnf_kmp(struct ids_statistics* stats, char* str, int s_len) {
     int index, i, j;
-    int p_len, s_len = strlen(str);
+    int p_len;
     char* p;
     int* next;
     bool found = false;
@@ -89,18 +89,22 @@ mtnf_ids_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 	uint16_t i, num_out;
     char* pkt_data;
 
+    struct ipv4_hdr* ipv4;
+
 	stats = (struct ids_statistics *)state;
 	num_out = num;
 	for (i = 0; i < num; i ++) {
+        ipv4 = mtnf_pkt_ipv4_hdr(pkt[i]);
+
         /* Check if we have a valid UDP packet */
         udp = mtnf_pkt_udp_hdr(pkt[i]);
         if (udp != NULL) {
             pkt_data = (char *)((uint8_t *) udp) + sizeof(struct udp_hdr);
             
-            if (mtnf_kmp(stats, pkt_data)) {
-                // if match
+            if (mtnf_kmp(stats, pkt_data, (int)rte_be_to_cpu_16(ipv4->total_length))) {
+//                printf("dropped\n");
             } else {
-                // not match
+//                tx_buffer[++ j] = pkt[i];
             };
             continue;
         }
@@ -109,10 +113,10 @@ mtnf_ids_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
         if (tcp != NULL) {
             pkt_data = (char *)((uint8_t *) tcp) + sizeof(struct tcp_hdr);
 
-            if (mtnf_kmp(stats, pkt_data)) {
-                // if match
+            if (mtnf_kmp(stats, pkt_data, (int)rte_be_to_cpu_16(ipv4->total_length))) {
+//                printf("dropped\n");
             } else {
-                // not match
+//                tx_buffer[++ j] = pkt[i];
             };
         }
 	}

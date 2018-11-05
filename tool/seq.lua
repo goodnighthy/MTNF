@@ -259,17 +259,5 @@ pktgen.seqTable(0, "1", seq_table_0 );
 pktgen.seqTable(1, "1", seq_table_1 );
 pktgen.seqTable(2, "1", seq_table_2 );
 pktgen.seqTable(3, "1", seq_table_3 );
-pktgen.seqTable(4, "1", seq_table_4 );
-pktgen.seqTable(5, "1", seq_table_5 );
-pktgen.seqTable(6, "1", seq_table_6 );
-pktgen.seqTable(7, "1", seq_table_7 );
-pktgen.seqTable(8, "1", seq_table_8 );
-pktgen.seqTable(9, "1", seq_table_9 );
-pktgen.seqTable(10, "1", seq_table_10 );
-pktgen.seqTable(11, "1", seq_table_11 );
-pktgen.seqTable(12, "1", seq_table_12 );
-pktgen.seqTable(13, "1", seq_table_13 );
-pktgen.seqTable(14, "1", seq_table_14 );
-pktgen.seqTable(15, "1", seq_table_15 );
 
-pktgen.set("1", "seq_cnt", 16);
+pktgen.set("1", "seq_cnt", 4);

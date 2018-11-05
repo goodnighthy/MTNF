@@ -10,8 +10,8 @@
 
 #include "mtnf_help.h"
 
-#define IDS_RULE_NUM 4
-#define STR_LEN 50
+#define IDS_RULE_NUM 6
+#define STR_LEN 30
 
 struct ids_statistics {
 	char str[IDS_RULE_NUM][STR_LEN];

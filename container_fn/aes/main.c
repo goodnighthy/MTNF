@@ -205,7 +205,7 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
         hlen = pkt_data - eth;
         plen = m->pkt_len - hlen;
             
-        aes_encrypt_ctr(pkt_data, plen, tmp_data, port_statistics[dst_port].key_schedule, 256, iv[0]);
+        aes_encrypt_ctr(pkt_data, plen / 4, tmp_data, port_statistics[dst_port].key_schedule, 256, iv[0]);
     } else {
         /* Check if we have a valid TCP packet */
         tcp = mtnf_pkt_tcp_hdr(m);
@@ -217,7 +217,7 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
             hlen = pkt_data - eth;
             plen = m->pkt_len - hlen;
 
-            aes_encrypt_ctr(pkt_data, plen, tmp_data, port_statistics[dst_port].key_schedule, 256, iv[0]);
+            aes_encrypt_ctr(pkt_data, plen / 4, tmp_data, port_statistics[dst_port].key_schedule, 256, iv[0]);
         }
 	}
 	/*
@@ -320,11 +320,13 @@ l2fwd_main_loop(void)
 			for (j = 0; j < nb_rx; j++) {
 				m = pkts_burst[j];
 				rte_prefetch0(rte_pktmbuf_mtod(m, void *));
-				l2fwd_simple_forward(m, portid);
-
 				tx_buffer[my_cnt] = m;
 				my_cnt ++;
 				if (my_cnt == MAX_PKT_BURST) {
+					int k;
+					for (k = 0; k < MAX_PKT_BURST; k ++) {
+						l2fwd_simple_forward(tx_buffer[k], portid);
+					}
 					sent = rte_eth_tx_burst(portid, 0, tx_buffer, MAX_PKT_BURST);
 					my_cnt = 0;
 					if (sent)

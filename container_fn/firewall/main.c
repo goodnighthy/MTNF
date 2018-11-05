@@ -79,6 +79,7 @@ struct lcore_queue_conf {
 } __rte_cache_aligned;
 struct lcore_queue_conf lcore_queue_conf[RTE_MAX_LCORE];
 
+//static struct rte_eth_dev_tx_buffer *tx_buffer[RTE_MAX_ETHPORTS];
 static struct rte_mbuf *tx_buffer[MAX_PKT_BURST];
 
 static struct rte_eth_conf port_conf = {
@@ -95,7 +96,7 @@ static struct rte_eth_conf port_conf = {
 struct rte_mempool * l2fwd_pktmbuf_pool = NULL;
 
 #define BIG_PRIME 10019
-#define BUCKET_SIZE 350
+#define BUCKET_SIZE 320
 
 struct hash_node {
     uint32_t ip_src, ip_dst;
@@ -206,7 +207,6 @@ static int
 mtnf_hash_lookup(struct ipv4_5tuple* key) {
     uint32_t index = mtnf_hash_val(key);
     bool found = false;
-
     uint8_t action = PASS;
     struct hash_node ptr;
 
@@ -310,7 +310,7 @@ l2fwd_mac_updating(struct rte_mbuf *m, unsigned dest_portid)
 	ether_addr_copy(&l2fwd_ports_eth_addr[dest_portid], &eth->s_addr);
 }
 
-static void
+static bool
 l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
 {
 	unsigned dst_port;
@@ -329,16 +329,18 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
     firewall_fill_ipv4_5tuple_key(&key, ipv4hdr);
     ret = mtnf_hash_lookup(&key);
 
+
     /* drop packets */
-/*    if (ret == PASS) {
-		buffer = tx_buffer[dst_port];
+    if (ret == PASS) {
+		return true;
+/*		buffer = tx_buffer[dst_port];
 		sent = rte_eth_tx_buffer(dst_port, 0, buffer, m);
 		if (sent)
-			port_statistics[dst_port].tx += sent;
+			port_statistics[dst_port].tx += sent;*/
     } else {
-        rte_pktmbuf_free(m);
+		return false;
+//        rte_pktmbuf_free(m);
     }
-*/	
 }
 
 /* main processing loop */
@@ -387,8 +389,7 @@ l2fwd_main_loop(void)
 		 */
 		diff_tsc = cur_tsc - prev_tsc;
 		if (unlikely(diff_tsc > drain_tsc)) {
-/*
-			for (i = 0; i < qconf->n_rx_port; i++) {
+/*			for (i = 0; i < qconf->n_rx_port; i++) {
 
 				portid = l2fwd_dst_ports[qconf->rx_port_list[i]];
 				buffer = tx_buffer[portid];
@@ -398,8 +399,7 @@ l2fwd_main_loop(void)
 					port_statistics[portid].tx += sent;
 
 			}
-*/
-			/* if timer is enabled */
+*/			/* if timer is enabled */
 			if (timer_period > 0) {
 
 				/* advance the timer */
@@ -431,14 +431,19 @@ l2fwd_main_loop(void)
 
 			port_statistics[portid].rx += nb_rx;
 
+			bool _pass;
 			for (j = 0; j < nb_rx; j++) {
 				m = pkts_burst[j];
 				rte_prefetch0(rte_pktmbuf_mtod(m, void *));
-				l2fwd_simple_forward(m, portid);
-
 				tx_buffer[my_cnt] = m;
 				my_cnt ++;
 				if (my_cnt == MAX_PKT_BURST) {
+					int k;
+					for (k = 0; k < MAX_PKT_BURST; k ++) {
+						_pass = l2fwd_simple_forward(tx_buffer[k], portid);
+					}
+					if (!_pass)
+						printf("not passed\n");
 					sent = rte_eth_tx_burst(portid, 0, tx_buffer, MAX_PKT_BURST);
 					my_cnt = 0;
 					if (sent)

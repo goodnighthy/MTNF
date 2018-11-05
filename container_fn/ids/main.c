@@ -106,10 +106,10 @@ struct l2fwd_port_statistics port_statistics[RTE_MAX_ETHPORTS];
 /* A tsc-based timer responsible for triggering statistics printout */
 static uint64_t timer_period = 10; /* default period is 10 seconds */
 
-#define IDS_RULE_NUM 4
+#define IDS_RULE_NUM 6
 
-static char str[IDS_RULE_NUM][50];
-static int next[IDS_RULE_NUM][50];
+static char str[IDS_RULE_NUM][30];
+static int next[IDS_RULE_NUM][30];
 
 static void
 mtnf_get_next(void) {
@@ -138,9 +138,9 @@ mtnf_get_next(void) {
 }
 
 static bool
-mtnf_kmp(char* _str) {
+mtnf_kmp(char* _str, int s_len) {
     int index, i, j;
-    int p_len, s_len = strlen(_str);
+    int p_len;
     char* p;
     int* _next;
     bool found = false;
@@ -176,10 +176,10 @@ mtnf_kmp(char* _str) {
 static void mtnf_ids_init(void) {
     int index, j;
     for (index = 0; index < IDS_RULE_NUM; index ++) {
-        for (j = 0; j < 49; j ++) {
+        for (j = 0; j < 29; j ++) {
             str[index][j] = 'a' + (j % 26);
         }
-        str[index][49] = '\0';
+        str[index][29] = '\0';
         mtnf_get_next();
     }
 }
@@ -246,7 +246,7 @@ l2fwd_mac_updating(struct rte_mbuf *m, unsigned dest_portid)
 	ether_addr_copy(&l2fwd_ports_eth_addr[dest_portid], &eth->s_addr);
 }
 
-static void
+static bool
 l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
 {
 	unsigned dst_port;
@@ -260,29 +260,38 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
 	if (mac_updating)
 		l2fwd_mac_updating(m, dst_port);
 
+    struct ipv4_hdr* ipv4;
     /* Check if we have a valid UDP packet */
     udp = mtnf_pkt_udp_hdr(m);
+    ipv4 = mtnf_pkt_ipv4_hdr(m);
     if (udp != NULL) {
+
         pkt_data = (char *)((uint8_t *) udp) + sizeof(struct udp_hdr);
             
-        if (mtnf_kmp(pkt_data)) {
+        if (mtnf_kmp(pkt_data, (int)rte_be_to_cpu_16(ipv4->total_length))) {
             // if match
+			return true;
         } else {
+			return false;
             // not match
         };
+
     } else {
         /* Check if we have a valid TCP packet */
         tcp = mtnf_pkt_tcp_hdr(m);
         if (tcp != NULL) {
             pkt_data = (char *)((uint8_t *) tcp) + sizeof(struct tcp_hdr);
 
-            if (mtnf_kmp(pkt_data)) {
+            if (mtnf_kmp(pkt_data, (int)rte_be_to_cpu_16(ipv4->total_length))) {
+				return true;
                 // if match
             } else {
+				return false;
                 // not match
             };
         }
 	}
+	return false;
 }
 
 /* main processing loop */
@@ -375,14 +384,19 @@ l2fwd_main_loop(void)
 
 			port_statistics[portid].rx += nb_rx;
 
+			bool _pass;
 			for (j = 0; j < nb_rx; j++) {
 				m = pkts_burst[j];
 				rte_prefetch0(rte_pktmbuf_mtod(m, void *));
-				l2fwd_simple_forward(m, portid);
-
 				tx_buffer[my_cnt] = m;
 				my_cnt ++;
 				if (my_cnt == MAX_PKT_BURST) {
+					int k;
+					for (k = 0; k < MAX_PKT_BURST; k ++) {
+						_pass = l2fwd_simple_forward(tx_buffer[k], portid);
+					}
+					if (_pass)
+						printf("ids found\n"); 
 					sent = rte_eth_tx_burst(portid, 0, tx_buffer, MAX_PKT_BURST);
 					my_cnt = 0;
 					if (sent)

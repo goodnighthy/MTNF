@@ -39,6 +39,8 @@
 #include <rte_mempool.h>
 #include <rte_mbuf.h>
 
+#include <sched.h>
+
 #include "mtnf_help.h"
 
 static volatile bool force_quit;
@@ -188,10 +190,6 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
 	if (mac_updating)
 		l2fwd_mac_updating(m, dst_port);
 
-	if (mtnf_pkt_is_tcp(m) == true)
-		port_statistics[dst_port].tcp_num++;
-	if (mtnf_pkt_is_udp(m) == true)
-		port_statistics[dst_port].udp_num++;
 	ipv4 = mtnf_pkt_ipv4_hdr(m);
 	len = rte_be_to_cpu_16(ipv4->total_length);
 	while (tmpi < len) {
@@ -204,6 +202,12 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
 		len_cnt[len % 17] = sum;
 	}
 
+	if (mtnf_pkt_is_tcp(m) == true) {
+		port_statistics[dst_port].tcp_num++;
+	}
+	if (mtnf_pkt_is_udp(m) == true)
+		port_statistics[dst_port].udp_num++;
+
 /*
 	buffer = tx_buffer[dst_port];
 	sent = rte_eth_tx_buffer(dst_port, 0, buffer, m);
@@ -215,6 +219,22 @@ l2fwd_simple_forward(struct rte_mbuf *m, unsigned portid)
 static void
 l2fwd_main_loop(void)
 {
+/*
+	int _ret;
+	errno = 0;
+    struct sched_param sp = {
+            .sched_priority = SCHED_RR//SCHED_RR
+//            .sched_priority = 0//SCHED_BATCH
+//            .sched_priority = SCHED_FIFO//SCHED_BATCH
+    };
+    _ret = sched_setscheduler(0, SCHED_RR, &sp);
+    printf("return = %d\n", _ret);
+    if (errno) {
+        printf("errno = %d\n", errno); // errno = 33
+        printf("error: %s\n", strerror(errno)); // error: Numerical argument out of domain
+    }
+    printf("Scheduler Policy now is %d.\n", sched_getscheduler(0));
+*/
 	int my_cnt = 0;
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	struct rte_mbuf *m;
@@ -306,11 +326,13 @@ l2fwd_main_loop(void)
 			for (j = 0; j < nb_rx; j++) {
 				m = pkts_burst[j];
 				rte_prefetch0(rte_pktmbuf_mtod(m, void *));
-				l2fwd_simple_forward(m, portid);
-
 				tx_buffer[my_cnt] = m;
 				my_cnt ++;
 				if (my_cnt == MAX_PKT_BURST) {
+					int k;
+					for (k = 0; k < MAX_PKT_BURST; k ++) {
+						l2fwd_simple_forward(tx_buffer[k], portid);
+					}
 					sent = rte_eth_tx_burst(portid, 0, tx_buffer, MAX_PKT_BURST);
 					my_cnt = 0;
 					if (sent)

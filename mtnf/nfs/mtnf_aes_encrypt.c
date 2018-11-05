@@ -87,7 +87,7 @@ mtnf_aes_encrypt_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
             hlen = pkt_data - eth;
             plen = pkt[i]->pkt_len - hlen;
             
-            aes_encrypt_ctr(pkt_data, plen, tmp_data, stats->key_schedule, 256, iv[0]);
+            aes_encrypt_ctr(pkt_data, plen / 4, tmp_data, stats->key_schedule, 256, iv[0]);
             num_out ++;
             continue;
         }
@@ -101,7 +101,7 @@ mtnf_aes_encrypt_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
             hlen = pkt_data - eth;
             plen = pkt[i]->pkt_len - hlen;
 
-            aes_encrypt_ctr(pkt_data, plen, tmp_data, stats->key_schedule, 256, iv[0]);
+            aes_encrypt_ctr(pkt_data, plen / 4, tmp_data, stats->key_schedule, 256, iv[0]);
             num_out ++;
         }
 	}
