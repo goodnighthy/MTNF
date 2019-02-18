@@ -7,7 +7,8 @@ make_func() {
     make clean
     make install
 
-    cd ../framework
+    # cd ../framework
+    cd ../framework_software
     make
     ./go.sh 0,2 1
 }
