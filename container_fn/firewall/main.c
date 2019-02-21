@@ -49,6 +49,7 @@ static int mac_updating = 1;
 #define RTE_LOGTYPE_L2FWD RTE_LOGTYPE_USER1
 
 #define MAX_PKT_BURST 32
+#define MAX_PKT_BUFFER 32
 #define BURST_TX_DRAIN_US 100 /* TX drain every ~100us */
 #define MEMPOOL_CACHE_SIZE 256
 
@@ -437,14 +438,14 @@ l2fwd_main_loop(void)
 				rte_prefetch0(rte_pktmbuf_mtod(m, void *));
 				tx_buffer[my_cnt] = m;
 				my_cnt ++;
-				if (my_cnt == MAX_PKT_BURST) {
+				if (my_cnt == MAX_PKT_BUFFER) {
 					int k;
-					for (k = 0; k < MAX_PKT_BURST; k ++) {
+					for (k = 0; k < MAX_PKT_BUFFER; k ++) {
 						_pass = l2fwd_simple_forward(tx_buffer[k], portid);
 					}
 					if (!_pass)
 						printf("not passed\n");
-					sent = rte_eth_tx_burst(portid, 0, tx_buffer, MAX_PKT_BURST);
+					sent = rte_eth_tx_burst(portid, 0, tx_buffer, MAX_PKT_BUFFER);
 					my_cnt = 0;
 					if (sent)
 						port_statistics[portid].tx += sent;
