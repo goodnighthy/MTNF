@@ -18,7 +18,8 @@
 extern struct tenants_info *tenants;
 extern struct ports_info *ports;
 extern struct rte_mempool *pktmbuf_pool;
-extern struct tenants_buffer *buffers;
+extern struct tenants_buffer *t_buffers;
+extern struct queues_buffer *q_buffers;
 
 
 /**********************************Functions**********************************/

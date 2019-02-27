@@ -3,7 +3,8 @@
 struct tenants_info *tenants;
 struct ports_info *ports;
 struct rte_mempool *pktmbuf_pool;
-struct tenants_buffer *buffers;
+struct tenants_buffer *t_buffers;
+struct queues_buffer *q_buffers;
 
 int
 init(int argc, char *argv[]) {
@@ -30,7 +31,8 @@ init(int argc, char *argv[]) {
     pktmbuf_pool = init_pktmbuf_pool(PKTMBUF_POOL_NAME, ports->num_ports * MBUFS_PER_PORT + QUEUE_NUM * MBUFS_PER_QUEUE + tenant_number * MBUFS_PER_TENANT);
 
     /* initialise mbuf buffers */
-    buffers = init_pktmbuf_buffer(PKTMBUF_BUFFER_NAME, sizeof(*buffers), tenant_number);
+    t_buffers = init_pktmbuf_buffer(PKTMBUF_T_BUFFER_NAME, sizeof(*t_buffers), tenant_number);
+    q_buffers = init_pktmbuf_buffer(PKTMBUF_Q_BUFFER_NAME, sizeof(*q_buffers), QUEUE_NUM);
 
     mtnf_states_init();
 
