@@ -21,7 +21,8 @@
 
 /* define common names for structures */
 #define PKTMBUF_POOL_NAME "mtnf_pktmbuf_pool"
-#define PKTMBUF_BUFFER_NAME "mtnf_pktmbuf_buffer"
+#define PKTMBUF_T_BUFFER_NAME "mtnf_pktmbuf_t_buffer"
+#define PKTMBUF_Q_BUFFER_NAME "mtnf_pktmbuf_q_buffer"
 #define MTNF_QUEUE_NAME "mtnf_queue_name_%u"
 #define MTNF_PORT_INFO "mtnf_port_info"
 #define MTNF_TENANT_INFO "mtnf_tenant_info"
@@ -37,6 +38,12 @@ struct dispatcher_info
 struct worker_info
 {
 	uint8_t id;
+};
+
+struct queues_buffer
+{
+    struct rte_mbuf *buffer_slot[MBUFS_PER_QUEUE];
+    uint16_t num;
 };
 
 /* define a structure to buffer packets for each tenant */
