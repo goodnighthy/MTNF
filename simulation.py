@@ -1,79 +1,43 @@
 import copy
 import random
+import time
 
 thres = 4.2
 
-flowlist = []
+# gen all shuffle sequence, returns a list of sequence list
+def genSeqList(tenant_num):
+    seqlist = []
+    _seq = [0] * tenant_num
+    _select_seq = [False] * tenant_num
+    def traverse(seq, select_seq, ptr):
+        if ptr == tenant_num:
+            seqlist.append(copy.copy(seq))
+        else:
+            for i in range(tenant_num):
+                if select_seq[i] == False:
+                    seq[ptr] = i
+                    select_seq[i] = True
+                    traverse(seq, select_seq, ptr + 1)
+                    select_seq[i] = False
+    traverse(_seq, _select_seq, 0)
+    return seqlist
 
-#sizelist = [0, 1, 2, 3, 4]
-sizelist = [0.2, 0.7, 1.2, 1.7, 2.2, 2.7, 3.2, 3.7, 4.2]
-seqlist = []
+# default schedule
+def smartNic(fl, seq, worker_num, tenant_num):
+    worker = [0] * worker_num
 
-worker_num = 4
-tenant_num = 8
-total_flow = 10
-
-def traverse(fl, ptr):
-    if ptr == tenant_num:
-        flow_sum = 0
-        for i in range(tenant_num):
-            flow_sum = flow_sum + fl[i]
-        if flow_sum < total_flow:
-            flowlist.append(copy.copy(fl))
-    else:
-        for i in range(len(sizelist)):
-            fl[ptr] = sizelist[i]
-            traverse(fl, ptr + 1)
-
-def traverse2(seq, select_seq, ptr):
-    if ptr == tenant_num:
-        seqlist.append(copy.copy(seq))
-    else:
-        for i in range(tenant_num):
-            if select_seq[i] == False:
-                seq[ptr] = i
-                select_seq[i] = True
-                traverse2(seq, select_seq, ptr + 1)
-                select_seq[i] = False
-
-_fl = []
-_seq = []
-_select_seq = []
-tenant = []
-worker = []
-for i in range(0, tenant_num):
-    _fl.append(0)
-    _seq.append(0)
-    _select_seq.append(False)
-    tenant.append(i / 2)
-
-worker = []
-for i in range(0, worker_num):
-    worker.append(0)
-
-#traverse(_fl, 0)
-traverse2(_seq, _select_seq, 0)
-
-
-def pktgen():
-    return random.choice(flowlist), random.choice(seqlist)
-
-def smartNic(fl, seq):
-    for i in range(4):
-        worker[i] = 0
-
-    for i in range(8):
+    for i in range(tenant_num):
         worker[tenant[i]] = worker[tenant[i]] + fl[i]
     
-    for i in range(4):
+    for i in range(worker_num):
         if worker[i] > thres:
             return True
     
     return False
 
-def scheSmartNic(fl, seq):
-    for i in range(worker_num):
-        worker[i] = 0
+# our schedule
+def scheSmartNic(fl, seq, worker_num, tenant_num):
+    worker = [0] * worker_num
 
     for i in range(tenant_num):
         worker[tenant[i]] = worker[tenant[i]] + fl[i]
@@ -99,14 +63,8 @@ def scheSmartNic(fl, seq):
     
     return False
 
-_ = 10000
-
-cnt1 = 0
-cnt2 = 0
-stable_time = 3
-#print len(flowlist)
-
-def genNewFl():
+# gen new flow
+def genNewFl(tenant_num):
     div = []
     _sum = 0
     tmp_size = 0
@@ -117,38 +75,73 @@ def genNewFl():
     div.append(round((100 - _sum) * 0.1, 1))
     return div
 
+def genNewFl2(tenant_num):
+    while True:
+        div = []
+        dot_list = [0, 10]
+        for i in range(tenant_num - 1):
+            # because i use randint, so i gen numbers between 1 and 99, then / 10
+            # then i get flow between 0.1 and 9.9
+            tmp_dot = round(float(random.randint(1, 99)) / 10, 1)
+            dot_list.append(tmp_dot)
+        dot_list.sort()
 
-total_cnt = 0
-#for i in range(100):
-while True:
-    f = open("./res.txt", "a")
-    total_cnt = total_cnt + 1
-#    tmp_fl, tmp_seq = pktgen()
-#    tmp_fl = flowlist[i]
-    tmp_fl = genNewFl()
-    tmp_seq = random.choice(seqlist)
-    for _t in range(tenant_num):
-        tenant[_t] = _t / 2
+        #  gen flow list and check if it is legal( <= 4.0 and >= 0.1 )
+        for i in range(tenant_num):
+            tmp_fl_size = dot_list[i + 1] - dot_list[i]
+            if tmp_fl_size <= 4.0 and tmp_fl_size > 0:
+                div.append(round(dot_list[i + 1] - dot_list[i], 2))
+            else:
+                break
+        if len(div) == tenant_num:
+            break
+    return div
 
-    if smartNic(tmp_fl, tmp_seq):
-        cnt1 = cnt1 + 1
+if __name__ == '__main__':
+    run_time = 10000
 
-    for slot in range(stable_time):
-        scheSmartNic(tmp_fl, random.choice(seqlist))
-    if scheSmartNic(tmp_fl, random.choice(seqlist)):
-        cnt2 = cnt2 + 1
-    if total_cnt % 100 == 0:
-        f.write("total: " + str(total_cnt) + \
-                "; old:" + str(cnt1 * 100.0 / total_cnt) + " - " + str(cnt1) + \
-                "; new:" + str(cnt2 * 100.0 / total_cnt) + " - " + str(cnt2) + "\n")
-    f.close()
+    start_time = time.time()
+
+    worker_num = 4
+    tenant_num = 8
+
+    cnt1 = 0 # cnt1 is the overload cnt of default scheme
+    cnt2 = 0 # cnt2 is the overload cnt of our scheme
+    stable_time = 3 # run how many times before we consider the flow status as stable
+
+    _fl = [0] * tenant_num
+    tenant = [0] * tenant_num
+
+    seqlist = genSeqList(tenant_num)
+
+    for total_cnt in range(1, run_time):
+    #    f = open("./res.txt", "a")
+        # gen the new flow and the sequence of the entering order of the flow
+        tmp_fl = genNewFl2(tenant_num)
+        tmp_seq = random.choice(seqlist)
+
+        # init the origin worker choice of each tenant
+        for _t in range(tenant_num):
+            tenant[_t] = _t / (tenant_num / worker_num)
+
+        # check default schedule's overload
+        if smartNic(tmp_fl, tmp_seq, worker_num, tenant_num):
+            cnt1 = cnt1 + 1
+
+        # run our schedule for stable time, check if it is overloaded
+        for slot in range(stable_time):
+            scheSmartNic(tmp_fl, random.choice(seqlist), worker_num, tenant_num)
+        if scheSmartNic(tmp_fl, random.choice(seqlist), worker_num, tenant_num):
+            cnt2 = cnt2 + 1
+
+        # print data
+        if total_cnt % 1000 == 0:
+            print("total: " + str(total_cnt) + \
+                    "; old:" + str(cnt1 * 100.0 / total_cnt) + " - " + str(cnt1) + \
+                    "; new:" + str(cnt2 * 100.0 / total_cnt) + " - " + str(cnt2) + "\n")
+    #    f.close()
 
 
-'''
-for i in range(200):
-    tmp_fl = genNewFl()
-    x = 0
-    for j in range(len(tmp_fl)):
-        x = x + tmp_fl[j]
-    print tmp_fl, x
-'''
+    end_time = time.time()
+
+    print("runtime: " + str(end_time - start_time))

@@ -26,12 +26,13 @@ def addtodict2(thedict, key_a, key_b, value):
 
 def read_file(tenant_name, time_name, dir_name, file_name):
 	file_path = dir_name + '/' + file_name
-	with open(file_path, 'r') as file:
-		lines = file.readlines()
-	for line in lines:
-		split_str = line.split()
-		addtodict2(tenant_name, split_str[2], split_str[0], int(split_str[1]))
-		addtodict2(time_name, split_str[0], split_str[2], int(split_str[1]))
+	if os.path.isfile(file_path) and file_path.find("bybykey") == -1:
+		with open(file_path, 'r') as file:
+			lines = file.readlines()
+		for line in lines:
+			split_str = line.split()
+			addtodict2(tenant_name, split_str[2], split_str[0], int(split_str[1]))
+			addtodict2(time_name, split_str[0], split_str[2], int(split_str[1]))
 		# print(split_str[2], split_str[0], int(split_str[1]))
 	# print(tenant_dic)
 
@@ -44,7 +45,7 @@ def read_dir(dir_name):
 			read_file(tenant_dic, time_dic, dirpath, file)
 			file_num = file_num + 1
 			print('file num:', file_num, 'file:', dirpath, file, 'finished!')
-			if file_num == 200:
+			if file_num == 20:
 				break
 		task_1_dic = parse_task_1and2(tenant_dic)
 		parse_task_3(time_dic, task_1_dic)
@@ -64,7 +65,6 @@ def read_dir(dir_name):
 def parse_task_1and2(tenant_dic):
 	thres_5cnt = 0
 	thres_20cnt = 0
-	show_pic = 0
 	whole_max_max = 0
 	whole_max_avg = 0
 	whole_max_sum = 0
@@ -77,7 +77,6 @@ def parse_task_1and2(tenant_dic):
 		traffic_max = 0
 		traffic_avg = 0
 		traffic_sum = 0
-		traffic_list = []
 		traffic_timelist = []
 
 		for time_data in tenant_dic[tenant_id]:
@@ -152,12 +151,12 @@ def parse_task_1and2(tenant_dic):
 	whole_cnt = 0
 	for tenant_id in tenant_dic: # calculate pdf
 		whole_cnt = whole_cnt + 1
-		avg_index = int(tenant_task_data[tenant_id]["avg"]) * 10000 / whole_max_avg
+		avg_index = int(int(tenant_task_data[tenant_id]["avg"]) * 10000 / whole_max_avg)
 #		print int(tenant_task_data[tenant_id]["avg"]), avg_index, whole_max_avg
 		avg_pdf_yval[avg_index] = avg_pdf_yval[avg_index] + 1
-		max_index = int(tenant_task_data[tenant_id]["max"]) * 10000 / whole_max_max
+		max_index = int(int(tenant_task_data[tenant_id]["max"]) * 10000 / whole_max_max)
 		max_pdf_yval[max_index] = max_pdf_yval[max_index] + 1
-		sum_index = int(tenant_task_data[tenant_id]["sum"]) * 10000 / whole_max_sum
+		sum_index = int(int(tenant_task_data[tenant_id]["sum"]) * 10000 / whole_max_sum)
 		sum_pdf_yval[sum_index] = sum_pdf_yval[sum_index] + 1
 	
 	# calculate cdf
@@ -237,7 +236,9 @@ def parse_task_3(time_dict, prev_data):
 
 def main():
 #	dir = './data/'
-	dir = '/data0/traffic/traffic_B'
+#	dir = '/data0/traffic/traffic_B'
+	dir = '/data0/traffic/traffic_C/'
+#	dir = '/data0/traffic/traffic_B'
 	read_dir(dir)
 
 if __name__ == "__main__":
