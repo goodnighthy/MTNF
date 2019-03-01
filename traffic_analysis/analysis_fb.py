@@ -2,6 +2,7 @@ import os
 import numpy as numpy
 #import matplotlib.pyplot as plt
 import json
+from scapy.all import *
 
 def write_to_file(xval, yval, fn):
 	with open(fn, 'w') as f:
@@ -49,22 +50,46 @@ def read_dir(dir_name):
 				break
 		task_1_dic = parse_task_1and2(tenant_dic)
 		parse_task_3(time_dic, task_1_dic)
-		'''
-		tenant_file = open('traffic_B_tenant_tmp.txt', 'w')
-		tenant_file.write(str(tenant_dic))
-		tenant_file.close()
-		time_file = open('traffic_B_time_tmp.txt', 'w')
-		time_file.write(str(time_dic))
-		time_file.close()
-		'''
+
+def read_pcap(tenant_dic, time_dic, file_name):
+	pcaps = rdpcap(file_name)
+
+	for i in range(len(pcaps)):
+		print("processing", i)
+		packet = pcaps[i]
+		ip = packet[IP].src
+		time_data = str(int(packet.time))
+		packet_len = len(packet)
+		addtodict2(tenant_dic, ip, time_data, packet_len)
+		addtodict2(time_dic, time_data, ip, packet_len)
+
+def read_pcap_dir(dir_name):
+	for dirpath, dirnames, filenames in os.walk(dir_name):
+		file_num = 0
+		tenant_dic = dict()
+		time_dic = dict()
+		for fn in filenames:
+			read_pcap(tenant_dic, time_dic, dirpath + '/' + fn)
+			file_num = file_num + 1
+			print('file num:', file_num, 'file:', dirpath, fn, 'finished!')
+		#	if file_num == 20:
+		#		break
+		task_1_dic = parse_task_1and2(tenant_dic)
+		parse_task_3(time_dic, task_1_dic)
+
+def read_single_dir(file_name):
+	tenant_dic = dict()
+	time_dic = dict()
+	read_pcap(tenant_dic, time_dic, file_name)
+	task_1_dic = parse_task_1and2(tenant_dic)
+	parse_task_3(time_dic, task_1_dic)
 
 # to prove that the avg traffic of each tenant isn't that large
 # can calc max and avg
 # to prove that the each tenant's traffic concentrate on some peeks
 # print cdf
 def parse_task_1and2(tenant_dic):
-	thres_5cnt = 0
-	thres_20cnt = 0
+	thres_cnt = 0
 	whole_max_max = 0
 	whole_max_avg = 0
 	whole_max_sum = 0
@@ -86,23 +111,16 @@ def parse_task_1and2(tenant_dic):
 			if traffic_max < traffic_val:
 				traffic_max = traffic_val
 
-		if len(traffic_timelist) >= 5:
-			thres_5cnt = thres_5cnt + 1
-		if len(traffic_timelist) >= 200:
-			thres_20cnt = thres_20cnt + 1
+		if len(traffic_timelist) >= 20:
+			thres_cnt = thres_cnt + 1
 
-		if len(traffic_timelist) >= 200:
+		if len(traffic_timelist) >= 20:
 			for time_data in traffic_timelist:
 				index = int(round(float(tenant_dic[tenant_id][str(time_data)]) / traffic_max, 2) * 100)
 				task2_pdf_yval[index] = task2_pdf_yval[index] + 1
 				task2_cnt = task2_cnt + 1
 
 		traffic_timelist.sort()
-#		tmp_sum = 0
-#		for time_data in traffic_timelist:
-#			tmp_sum = tmp_sum + tenant_dic[tenant_id][str(time_data)]
-#			tmp_cdf = float(tmp_sum) / traffic_sum
-#			traffic_list.append(tmp_cdf)
 		traffic_avg = traffic_sum / len(traffic_timelist)
 
 		if whole_max_max < traffic_max:
@@ -116,6 +134,7 @@ def parse_task_1and2(tenant_dic):
 		tenant_task_data[tenant_id] = {"max": traffic_max, "avg": traffic_avg, \
 									"sum": traffic_sum, "cnt": len(traffic_timelist)}
 
+	print("threshold cnt:", thres_cnt)
 	# here calculate all avg and max data
 	# result is two list
 	# avg's bin is 1
@@ -152,7 +171,6 @@ def parse_task_1and2(tenant_dic):
 	for tenant_id in tenant_dic: # calculate pdf
 		whole_cnt = whole_cnt + 1
 		avg_index = int(int(tenant_task_data[tenant_id]["avg"]) * 10000 / whole_max_avg)
-#		print int(tenant_task_data[tenant_id]["avg"]), avg_index, whole_max_avg
 		avg_pdf_yval[avg_index] = avg_pdf_yval[avg_index] + 1
 		max_index = int(int(tenant_task_data[tenant_id]["max"]) * 10000 / whole_max_max)
 		max_pdf_yval[max_index] = max_pdf_yval[max_index] + 1
@@ -182,19 +200,6 @@ def parse_task_1and2(tenant_dic):
 	write_to_file(max_xval, max_cdf_yval, "max.txt")
 	write_to_file(avg_xval, avg_cdf_yval, "avg.txt")
 
-	'''
-	plt.plot(task2_xval, task2_cdf_yval)
-	plt.show()
-
-	plt.plot(sum_xval, sum_cdf_yval)
-	plt.show()
-
-	plt.plot(max_xval, max_cdf_yval)
-	plt.show()
-
-	plt.plot(avg_xval, avg_cdf_yval)
-	plt.show()
-	'''
 	return tenant_task_data
 
 # to prove that only few tenants' traffic reach its peek
@@ -229,17 +234,18 @@ def parse_task_3(time_dict, prev_data):
 		time_cdf_yval[index] = float(tmp_sum) / cnt
 
 	write_to_file(time_xval, time_cdf_yval, "time.txt")
-	'''
-	plt.plot(time_xval, time_cdf_yval)
-	plt.show()
-	'''
 
 def main():
 #	dir = './data/'
-#	dir = '/data0/traffic/traffic_B'
-	dir = '/data0/traffic/traffic_C/'
-#	dir = '/data0/traffic/traffic_B'
-	read_dir(dir)
+#	dir = '/data0/traffic/traffic_A'
+#	dir = '/data0/traffic/traffic_B/'
+#	dir = '/data0/traffic/traffic_C'
+#	file_name = '/data0/equinix-chicago.dirB.20160121-135641.UTC.anon.pcap'
+#	file_name = '/data0/traffic/baidu/new_idcebgw9_00046_20180110153305'
+	dir = '/data0/traffic/baidu/'
+#	read_dir(dir)
+#	read_pcap(file_name)
+	read_pcap_dir(dir)
 
 if __name__ == "__main__":
     main()

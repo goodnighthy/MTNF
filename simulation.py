@@ -98,12 +98,12 @@ def genNewFl2(tenant_num):
     return div
 
 if __name__ == '__main__':
-    run_time = 10000
+    run_time = 100000
 
     start_time = time.time()
 
     worker_num = 4
-    tenant_num = 8
+    tenant_num = 4
 
     cnt1 = 0 # cnt1 is the overload cnt of default scheme
     cnt2 = 0 # cnt2 is the overload cnt of our scheme
@@ -112,13 +112,17 @@ if __name__ == '__main__':
     _fl = [0] * tenant_num
     tenant = [0] * tenant_num
 
-    seqlist = genSeqList(tenant_num)
+    seqlist = [[]]
+    for i in range(tenant_num):
+        seqlist[0].append(i)
+#    seqlist = genSeqList(tenant_num)
 
-    for total_cnt in range(1, run_time):
+    for total_cnt in range(1, run_time + 1):
     #    f = open("./res.txt", "a")
         # gen the new flow and the sequence of the entering order of the flow
         tmp_fl = genNewFl2(tenant_num)
         tmp_seq = random.choice(seqlist)
+        print(tmp_fl)
 
         # init the origin worker choice of each tenant
         for _t in range(tenant_num):
