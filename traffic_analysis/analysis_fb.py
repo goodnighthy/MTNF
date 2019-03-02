@@ -3,6 +3,7 @@ import numpy as numpy
 #import matplotlib.pyplot as plt
 import json
 from scapy.all import *
+import time
 
 def write_to_file(xval, yval, fn):
 	with open(fn, 'w') as f:
@@ -52,16 +53,16 @@ def read_dir(dir_name):
 		parse_task_3(time_dic, task_1_dic)
 
 def read_pcap(tenant_dic, time_dic, file_name):
-	pcaps = rdpcap(file_name)
-
-	for i in range(len(pcaps)):
+	i = 0
+	for packet in PcapReader(file_name):
 		print("processing", i)
-		packet = pcaps[i]
-		ip = packet[IP].src
-		time_data = str(int(packet.time))
-		packet_len = len(packet)
-		addtodict2(tenant_dic, ip, time_data, packet_len)
-		addtodict2(time_dic, time_data, ip, packet_len)
+		if 'IP' in packet:
+			ip = packet['IP'].src
+			time_data = str(int(packet.time))
+			packet_len = len(packet)
+			addtodict2(tenant_dic, ip, time_data, packet_len)
+			addtodict2(time_dic, time_data, ip, packet_len)
+			i = i + 1
 
 def read_pcap_dir(dir_name):
 	for dirpath, dirnames, filenames in os.walk(dir_name):
@@ -240,12 +241,13 @@ def main():
 #	dir = '/data0/traffic/traffic_A'
 #	dir = '/data0/traffic/traffic_B/'
 #	dir = '/data0/traffic/traffic_C'
-#	file_name = '/data0/equinix-chicago.dirB.20160121-135641.UTC.anon.pcap'
-#	file_name = '/data0/traffic/baidu/new_idcebgw9_00046_20180110153305'
-	dir = '/data0/traffic/baidu/'
+#	file_name = '/data0/traffic/baidu/new_idcebgw4_00018_20180110152913'
+	file_name = '/data0/equinix-chicago.dirB.20160121-135641.UTC.anon.pcap'
+#	dir = '/data0/traffic/baidu/'
 #	read_dir(dir)
 #	read_pcap(file_name)
-	read_pcap_dir(dir)
+#	read_pcap_dir(dir)
+	read_single_dir(file_name)
 
 if __name__ == "__main__":
     main()
