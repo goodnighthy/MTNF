@@ -41,7 +41,12 @@ static unsigned long start_usec, end_usec;
 static int buffer_odd_cnt;
 */
 
+#define BIG_PRIME 10019
 static volatile bool keep_running = 1;
+static uint16_t shift_8 = 1UL << 8;
+static uint32_t shift_16 = 1UL << 16;
+static uint64_t shift_32 = 1UL << 32;
+static uint8_t hash_table[BIG_PRIME];
 
 static void
 handle_signal(int sig) {
@@ -50,10 +55,39 @@ handle_signal(int sig) {
     }
 }
 
+struct ipv4_key {
+    uint32_t src_addr;
+    uint32_t dst_addr;
+    uint16_t src_port;
+    uint16_t dst_port;
+    uint8_t  proto;
+};
+
+struct mtnf_classifier {
+    uint32_t src_addr;
+    uint32_t dst_addr;
+    uint16_t src_port;
+    uint16_t dst_port;
+    uint8_t  proto;
+    uint8_t tenant_id;
+};
+
+/* calc hash value */
+static uint32_t
+mtnf_hash_val(struct mtnf_classifier* tmp_turple) {
+    uint64_t ret = 0;
+    ret = tmp_turple->src_addr % BIG_PRIME;
+    ret = (ret * shift_32 + tmp_turple->dst_addr) % BIG_PRIME;
+    ret = (ret * shift_16 + tmp_turple->src_port) % BIG_PRIME;
+    ret = (ret * shift_16 + tmp_turple->dst_port) % BIG_PRIME;
+    ret = (ret * shift_8 + tmp_turple->proto) % BIG_PRIME;
+    return (uint32_t)ret;
+}
+
 static int
 dispatcher_thread(void *arg) {
     uint8_t i, port_id, tid, wid;
-    uint16_t j, k, nb_rx, nb_tx;
+    uint16_t j, k, nb_rx, nb_tx, hash_index;
     uint32_t min_load, min_queue;
     uint64_t timeslot;
     struct rte_mbuf *pkts[PACKET_READ_SIZE];
@@ -62,22 +96,7 @@ dispatcher_thread(void *arg) {
     struct tcp_hdr *tcp_hdr;
     struct udp_hdr *udp_hdr;
     struct rte_ring *worker_queue;
-    struct ipv4_key {
-        uint32_t src_addr;
-        uint32_t dst_addr;
-        uint16_t src_port;
-        uint16_t dst_port;
-        uint8_t  proto;
-    };
     struct ipv4_key key;
-    struct mtnf_classifier {
-        uint32_t src_addr;
-        uint32_t dst_addr;
-        uint16_t src_port;
-        uint16_t dst_port;
-        uint8_t  proto;
-        uint8_t tenant_id;
-    };
     /*
     struct mtnf_classifier classifier_table[MAX_TENANTS] = {{3232235521, 3232235777, 1234, 5678, 6, 1},
                                                             {3232235522, 3232235777, 1234, 5678, 6, 2},
@@ -104,6 +123,15 @@ dispatcher_thread(void *arg) {
                                             {0, 0, 0, 0, 10000000},
                                             {0, 0, 0, 0, 10000000},
                                             {0, 0, 0, 0, 10000000}}; 
+    
+    /* create hashtable, if two tenant falls into the same bucket, fails */
+    memset(hash_table, 0, sizeof(hash_table));
+    for (i = 0; i < MAX_TENANTS; i ++) {
+        hash_index = mtnf_hash_val(&classifier_table[i]);
+//        printf("%d\n", hash_index);
+        hash_table[hash_index] = i + 1;
+    }
+
     struct dispatcher_info *dispatcher_info = (struct dispatcher_info *)arg;
     RTE_LOG(INFO, MTNF, "Core %d: Running dispatcher thread\n", rte_lcore_id());
 

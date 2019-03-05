@@ -10,7 +10,7 @@ make_func() {
     # cd ../framework
     cd ../framework_software
     make
-    ./go.sh 0,2 1
+    ./go.sh 0,2,4,6,8,10 3
 }
 
 make_func

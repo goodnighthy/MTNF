@@ -7,7 +7,7 @@ import time
 
 def write_to_file(xval, yval, fn):
 	with open(fn, 'w') as f:
-		write_data = [xval, yval]
+		write_data = [list(xval), yval]
 		write_data = json.dumps(write_data)
 		f.write(write_data)
 
@@ -215,7 +215,7 @@ def parse_task_3(time_dict, prev_data):
 	for index in range(len(time_list)):
 		time_id = str(time_list[index])
 		for tenant_id in time_dict[time_id]:
-			if prev_data[tenant_id]["cnt"] > 20:
+			if prev_data[tenant_id]["cnt"] >= 5:
 				if time_dict[time_id][tenant_id] > float(prev_data[tenant_id]["max"]) * 0.8:
 					tenant_number_80[index] = tenant_number_80[index] + 1
 		if whole_max < tenant_number_80[index]:
@@ -242,7 +242,8 @@ def main():
 #	dir = '/data0/traffic/traffic_B/'
 #	dir = '/data0/traffic/traffic_C'
 #	file_name = '/data0/traffic/baidu/new_idcebgw4_00018_20180110152913'
-	file_name = '/data0/equinix-chicago.dirB.20160121-135641.UTC.anon.pcap'
+	file_name = '/data0/equinix-chicago.dirA.20160121-125911.UTC.anon.pcap'
+#	file_name = '/data0/equinix-chicago.dirB.20160121-135641.UTC.anon.pcap'
 #	dir = '/data0/traffic/baidu/'
 #	read_dir(dir)
 #	read_pcap(file_name)
