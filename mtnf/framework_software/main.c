@@ -50,11 +50,27 @@ handle_signal(int sig) {
     }
 }
 
+#define BIG_PRIME 10019
+static int hash_table[BIG_PRIME];
+static uint16_t shift_8 = 1UL << 8;
+static uint32_t shift_16 = 1UL << 16;
+static uint64_t shift_32 = 1UL << 32;
+
+static uint32_t hash_val(uint32_t sa, uint32_t da, uint16_t sp, uint16_t dp, uint8_t p) {
+    uint64_t ret = 0;
+    ret = sa % BIG_PRIME;
+    ret = (ret * shift_32 + da) % BIG_PRIME;
+    ret = (ret * shift_16 + sp) % BIG_PRIME;
+    ret = (ret * shift_16 + dp) % BIG_PRIME;
+    ret = (ret * shift_8 + p) % BIG_PRIME;
+    return (uint32_t)ret;
+}
+
 static int
 dispatcher_thread(void *arg) {
     uint8_t i, port_id, tid, wid;
     uint16_t j, k, nb_rx, nb_tx;
-    uint32_t min_load, min_queue;
+    uint32_t min_load, min_queue, hash_index;
     uint64_t timeslot;
     struct rte_mbuf *pkts[PACKET_READ_SIZE];
     struct timeval cur_time;
@@ -107,6 +123,14 @@ dispatcher_thread(void *arg) {
     struct dispatcher_info *dispatcher_info = (struct dispatcher_info *)arg;
     RTE_LOG(INFO, MTNF, "Core %d: Running dispatcher thread\n", rte_lcore_id());
 
+    memset(hash_table, 0, sizeof(int) * BIG_PRIME);
+    /* this init the hash table! 8 is for the 8 current tenant now */
+    for (i = 0; i < 8; i ++) {
+        struct mtnf_classifier tmp_c = classifier_table[i];
+        hash_index = hash_val(tmp_c.src_addr, tmp_c.dst_addr, tmp_c.src_port, tmp_c.dst_port, tmp_c.proto);
+        hash_table[hash_index] = tmp_c.tenant_id;
+    }
+
     for (; keep_running;) {
         for (i = 0; i < dispatcher_info->ports_num; i++) {
             port_id = ports->id[i];
@@ -132,6 +156,9 @@ dispatcher_thread(void *arg) {
                         key.dst_port = 0;
                 }
                 tid = 0;
+                hash_index = hash_val(key.src_addr, key.dst_addr, key.src_port, key.dst_port, key.proto);
+                tid = hash_table[hash_index];
+                /*
                 for (k = 0; k < MAX_TENANTS; k++) {
                     if (key.src_addr == classifier_table[k].src_addr &&
                         key.dst_addr == classifier_table[k].dst_addr &&
@@ -142,6 +169,7 @@ dispatcher_thread(void *arg) {
                         break;
                     }
                 }
+                */
 //                printf("src ip%u, dst ip%u\n", (int)key.src_addr, (int)key.dst_addr);
 //                printf("src addr:%u; dst addr%u; src port:%u; dst port:%u; proto:%u\n", key.src_addr, key.dst_addr, key.src_port, key.dst_port, key.proto);
                 ipv4_hdr->type_of_service = tid;
