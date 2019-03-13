@@ -17,30 +17,30 @@ mtnf_nat_init(void *state) {
 
 	stats = (struct nat_statistics *)state;
 
-    memset(flowkey_map, 0, sizeof(struct flow_key) * BIG_PRIME * BUCKET_SIZE);
-    memset(natentry_map, 0, sizeof(struct nat_entry) * BIG_PRIME * BUCKET_SIZE);
-    memset(bucket_cnt, 0, sizeof(uint16_t) * BIG_PRIME);
-    memset(port_used, 0, sizeof(bool) * 65536);
+    memset(stats->flowkey_map, 0, sizeof(struct flow_key) * BIG_PRIME * BUCKET_SIZE);
+    memset(stats->natentry_map, 0, sizeof(struct nat_entry) * BIG_PRIME * BUCKET_SIZE);
+    memset(stats->bucket_cnt, 0, sizeof(uint16_t) * BIG_PRIME);
+    memset(stats->port_used, 0, sizeof(bool) * 65536);
 }
 
 /* no use of rtr_be_to_cpu_16 because have to maintain the origin data */
 static void fill_fkey(struct ipv4_hdr *ipv4, struct flow_key *f_key) {
     struct tcp_hdr *tcp_hdr;
     struct udp_hdr *udp_hdr;
-    f_key.proto = ipv4->next_proto_id;
-    f_key.src_ip = ipv4->src_addr;
-    f_key.dst_ip = ipv4->dst_addr;
-    if (f_key.proto == IP_PROTOCOL_TCP) {
+    f_key->proto = ipv4->next_proto_id;
+    f_key->src_ip = ipv4->src_addr;
+    f_key->dst_ip = ipv4->dst_addr;
+    if (f_key->proto == IP_PROTOCOL_TCP) {
         tcp_hdr = (struct tcp_hdr *)((uint8_t*)ipv4 + sizeof(struct ipv4_hdr));
-        key->port_src = tcp_hdr->src_port;
-        key->port_dst = tcp_hdr->dst_port;
-    } else if (f_key.proto == IP_PROTOCOL_UDP) {
+        f_key->src_port = tcp_hdr->src_port;
+        f_key->dst_port = tcp_hdr->dst_port;
+    } else if (f_key->proto == IP_PROTOCOL_UDP) {
         udp_hdr = (struct udp_hdr *)((uint8_t*)ipv4 + sizeof(struct ipv4_hdr));
-        key->port_src = udp_hdr->src_port;
-        key->port_dst = udp_hdr->dst_port;
+        f_key->src_port = udp_hdr->src_port;
+        f_key->dst_port = udp_hdr->dst_port;
     } else {
-        f_key.src_port = 0;
-        f_key.dst_port = 0;
+        f_key->src_port = 0;
+        f_key->dst_port = 0;
     }
 }
 
@@ -62,17 +62,17 @@ static uint32_t hash_natentry(struct nat_entry *key) {
     return (uint32_t)hash_val;
 }
 
-static void update_hdr(struct ipv4_hdr *hdr, struct nat_entry *nat) {
+static void update_hdr(struct ipv4_hdr *ipv4, struct nat_entry *nat) {
     struct tcp_hdr *tcp_hdr;
     struct udp_hdr *udp_hdr;
     if (ipv4->next_proto_id == IP_PROTOCOL_TCP) {
         tcp_hdr = (struct tcp_hdr *)((uint8_t*)ipv4 + sizeof(struct ipv4_hdr));
         ipv4->src_addr = nat->new_ip;
-        tcp_hdr->port_src = nat->new_port;
-    } else if (f_key.proto == IP_PROTOCOL_UDP) {
+        tcp_hdr->src_port = nat->new_port;
+    } else if (ipv4->next_proto_id == IP_PROTOCOL_UDP) {
         udp_hdr = (struct udp_hdr *)((uint8_t*)ipv4 + sizeof(struct ipv4_hdr));
         ipv4->src_addr = nat->new_ip;
-        udp_hdr->port_src = nat->new_port;
+        udp_hdr->src_port = nat->new_port;
     } else {
         // it shouldn't happen
     }
@@ -80,7 +80,7 @@ static void update_hdr(struct ipv4_hdr *hdr, struct nat_entry *nat) {
 
 /*  since our nf doesn't have further processing 
     here reverse the ip and port to simulate the opposite nat */
-static void ipv4_hdr_reverse(struct ipv4_hdr *hdr) {
+static void ipv4_hdr_reverse(struct ipv4_hdr *ipv4) {
     uint32_t tmp_ip;
     uint16_t tmp_port;
     struct tcp_hdr *tcp_hdr;
@@ -90,14 +90,14 @@ static void ipv4_hdr_reverse(struct ipv4_hdr *hdr) {
     ipv4->dst_addr = tmp_ip;
     if (ipv4->next_proto_id == IP_PROTOCOL_TCP) {
         tcp_hdr = (struct tcp_hdr *)((uint8_t*)ipv4 + sizeof(struct ipv4_hdr));
-        tmp_port = tcp_hdr->port_src;
-        tcp_hdr->port_src = tcp_hdr->port_dst;
-        tcp_hdr->port_dst = tmp_port;
-    } else if (f_key.proto == IP_PROTOCOL_UDP) {
+        tmp_port = tcp_hdr->src_port;
+        tcp_hdr->src_port = tcp_hdr->dst_port;
+        tcp_hdr->dst_port = tmp_port;
+    } else if (ipv4->next_proto_id == IP_PROTOCOL_UDP) {
         udp_hdr = (struct udp_hdr *)((uint8_t*)ipv4 + sizeof(struct ipv4_hdr));
-        tmp_port = udp_hdr->port_src;
-        udp_hdr->port_src = udp_hdr->port_dst;
-        udp_hdr->port_dst = tmp_port;
+        tmp_port = udp_hdr->src_port;
+        udp_hdr->src_port = udp_hdr->dst_port;
+        udp_hdr->dst_port = tmp_port;
     } else {
         // it shouldn't happen
     }
@@ -114,18 +114,18 @@ static void fkey_reverse(struct flow_key *f_key) {
     f_key->dst_port = tmp_port;
 }
 
-static struct nat_entry* get_natentry(void *state, struct flow_key* fkey) {
-    struct nat_statistics stats = (struct nat_statistics *)state;
-    uint32_t hash_index = hash_flowkey(fkey), bucket_index;
+static struct nat_entry* get_natentry(void *state, struct flow_key* f_key) {
+    struct nat_statistics *stats = (struct nat_statistics *)state;
+    uint32_t hash_index = hash_flowkey(f_key), bucket_index;
     struct flow_key *tmp_key;
 
     /* find nat entry */
-    for (bucket_index = 0; bucket_index < bucket_cnt[hash_index]; bucket_index ++) {
+    for (bucket_index = 0; bucket_index < stats->bucket_cnt[hash_index]; bucket_index ++) {
         tmp_key = &(stats->flowkey_map[hash_index][bucket_index]);
-        if (tmp_key->src_ip == f_key.src_ip && tmp_key->dst_ip == f_key.dst_ip \
-            tmp_key->src_port == f_key.src_port && tmp_key->dst_port == f_key.dst_port \
-            tmp_key->proto == f_key.proto) {
-                return &(natentry_map[hash_index][bucket_index]);
+        if (tmp_key->src_ip == f_key->src_ip && tmp_key->dst_ip == f_key->dst_ip && \
+            tmp_key->src_port == f_key->src_port && tmp_key->dst_port == f_key->dst_port && \
+            tmp_key->proto == f_key->proto) {
+                return &(stats->natentry_map[hash_index][bucket_index]);
         }
     }
     return NULL;
@@ -135,7 +135,7 @@ static struct nat_entry* get_natentry(void *state, struct flow_key* fkey) {
 uint16_t
 mtnf_nat_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 	struct nat_statistics *stats;
-	uint16_t i, num_out, len;
+	uint16_t i, num_out;
 	struct ipv4_hdr* ipv4;
     struct flow_key f_key;
     uint32_t hash_index, bucket_index;
@@ -149,7 +149,6 @@ mtnf_nat_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 
 	stats = (struct nat_statistics *)state;
 	num_out = num;
-	uint64_t sum, tmpi;
 	for (i = 0; i < num; i++) {
 		ipv4 = mtnf_pkt_ipv4_hdr(pkt[i]);
 
@@ -165,7 +164,7 @@ mtnf_nat_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
         /* found */
         if (fwd_entry != NULL) {
             fkey_reverse(&f_key);
-            bwd_entry = get_natentry(&f_key);
+            bwd_entry = get_natentry(stats, &f_key);
             found_nat = true;
         } else {
             /* if bucket is full, do nothing */
@@ -182,8 +181,8 @@ mtnf_nat_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                     /* new port should be from 1 to 65535 */
                     new_port = (rand() * 3 + 17) % 65535;
                     /* port 0 is reserved, so if 0 then try again*/
-                    if (new_port != 0 && port_used[new_port] == false) {
-                        port_used[new_port] = true;
+                    if (new_port != 0 && stats->port_used[new_port] == false) {
+                        stats->port_used[new_port] = true;
                         break;
                     } else
                         new_port = 0;
@@ -207,7 +206,7 @@ mtnf_nat_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                 tmp_port = new_port;
                 new_ip = f_key.src_ip;
                 new_port = f_key.src_port;
-                fkey_reverse(f_key);
+                fkey_reverse(&f_key);
                 f_key.dst_ip = tmp_ip;
                 f_key.dst_port = tmp_port;
                 hash_index = hash_flowkey(&f_key);
@@ -234,10 +233,10 @@ mtnf_nat_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 
         if (found_nat) {
             update_hdr(ipv4, fwd_entry);
-            simulate_reverse(ipv4);
+            ipv4_hdr_reverse(ipv4);
             update_hdr(ipv4, bwd_entry);
         } else {
-            simulate_reverse(ipv4);
+            ipv4_hdr_reverse(ipv4);
         }
 	}
 
