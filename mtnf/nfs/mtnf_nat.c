@@ -161,15 +161,25 @@ mtnf_nat_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
         /* nat process */
         fwd_entry = get_natentry(stats, &f_key);
 
+
         /* found */
         if (fwd_entry != NULL) {
             fkey_reverse(&f_key);
+            f_key.dst_ip = fwd_entry->new_ip;
+            f_key.dst_port = fwd_entry->new_port;
             bwd_entry = get_natentry(stats, &f_key);
+            if (bwd_entry == NULL)
+                printf("bwd_entry missing!!!!!!!!\n");
             found_nat = true;
         } else {
             /* if bucket is full, do nothing */
             bucket_index = stats->bucket_cnt[hash_index];
+/*            printf("sip: %u, dip: %u, sp: %u, dp: %u, hash: %u, bucket: %u\n", \
+                f_key.src_ip, f_key.dst_ip, f_key.src_port, f_key.dst_port, \
+                hash_index, bucket_index);
+*/
             if (bucket_index == BUCKET_SIZE) {
+                printf("bucket full!!!!!!\n");
                 found_nat = false;                
             } else { /* create a new entry */
                 /* try to pick a random port for 10 times */
@@ -211,6 +221,10 @@ mtnf_nat_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                 f_key.dst_port = tmp_port;
                 hash_index = hash_flowkey(&f_key);
                 bucket_index = stats->bucket_cnt[hash_index];
+/*                printf("sip: %u, dip: %u, sp: %u, dp: %u, hash: %u, bucket: %u\n", \
+                    f_key.src_ip, f_key.dst_ip, f_key.src_port, f_key.dst_port, \
+                    hash_index, bucket_index);
+*/
                 if (bucket_index < BUCKET_SIZE) { /* bucket not full */
                     stats->flowkey_map[hash_index][bucket_index].src_ip = f_key.src_ip;
                     stats->flowkey_map[hash_index][bucket_index].dst_ip = f_key.dst_ip;

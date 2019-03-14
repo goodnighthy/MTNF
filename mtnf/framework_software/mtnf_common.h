@@ -15,7 +15,7 @@
 #define MBUFS_PER_TENANT 256
 
 /* default period is 1 seconds */
-#define TIMER_PERIOD 1
+#define TIMER_PERIOD 3
 
 #define PACKET_READ_SIZE 32
 
