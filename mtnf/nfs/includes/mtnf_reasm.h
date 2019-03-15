@@ -10,7 +10,7 @@
 #include "mtnf_help.h"
 
 #define BIG_PRIME 10019
-#define BUCKET_SIZE 10
+#define RE_BUCKET_SIZE 10
 #define PLANNED_SEQ_SIZE 10
 #define BUFFERED_SEGS_SIZE 32
 
@@ -33,8 +33,8 @@ struct flow_key {
 };
 
 struct reasm_statistics {
-    struct flow_key flowkey_map[BIG_PRIME][BUCKET_SIZE];
-    struct data_entry dataentry_map[BIG_PRIME][BUCKET_SIZE];
+    struct flow_key flowkey_map[BIG_PRIME][RE_BUCKET_SIZE];
+    struct data_entry dataentry_map[BIG_PRIME][RE_BUCKET_SIZE];
     uint16_t bucket_cnt[BIG_PRIME];
 };
 

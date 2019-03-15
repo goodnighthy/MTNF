@@ -23,8 +23,8 @@ mtnf_reasm_init(void *state) {
 
 	stats = (struct reasm_statistics *)state;
     
-    memset(stats->flowkey_map, 0, sizeof(struct flow_key) * BIG_PRIME * BUCKET_SIZE);
-    memset(stats->dataentry_map, 0, sizeof(struct data_entry) * BIG_PRIME * BUCKET_SIZE);
+    memset(stats->flowkey_map, 0, sizeof(struct flow_key) * BIG_PRIME * RE_BUCKET_SIZE);
+    memset(stats->dataentry_map, 0, sizeof(struct data_entry) * BIG_PRIME * RE_BUCKET_SIZE);
     memset(stats->bucket_cnt, 0, sizeof(uint16_t) * BIG_PRIME);
     memset(global_pkt_buf, 0, sizeof(char) * PKTBUF_SIZE * PKTBUF_CAP);
     memset(flag_pkt_buf, 0, sizeof(bool) * PKTBUF_SIZE);
@@ -63,7 +63,7 @@ static uint32_t hash_flowkey(struct flow_key *key) {
 
 static void 
 get_data_entry(void *state, struct flow_key *key, uint32_t *hi, \
-            uint16_t *bi, struct data_entry *de) {
+            uint16_t *bi) {
     struct  reasm_statistics *stats = (struct reasm_statistics *)state;
     struct flow_key *tmp_key;
     uint32_t hash_index;
@@ -71,9 +71,15 @@ get_data_entry(void *state, struct flow_key *key, uint32_t *hi, \
 
     hash_index = hash_flowkey(key);
     bucket_cap = stats->bucket_cnt[hash_index];
+    //printf("bucket_cap: %u\n", bucket_cap);
     
     for (bucket_index = 0; bucket_index < bucket_cap; bucket_index ++) {
         tmp_key = &(stats->flowkey_map[hash_index][bucket_index]);
+        //printf("sip1: %u, sip2: %u\n", tmp_key->src_ip, key->src_ip);
+        //printf("dip1: %u, dip2: %u\n", tmp_key->dst_ip, key->dst_ip);
+        //printf("sp1: %u, sp2: %u\n", tmp_key->src_port, key->src_port);
+        //printf("dp1: %u, dp2: %u\n", tmp_key->dst_port, key->dst_port);
+        //printf("proto1: %u, proto2: %u\n", tmp_key->proto, key->proto);
         if (tmp_key->src_ip == key->src_ip && tmp_key->dst_ip == key->dst_ip && \
             tmp_key->src_port == key->src_port && tmp_key->dst_port == key->dst_port && \
             tmp_key->proto  == key->proto) {
@@ -81,13 +87,10 @@ get_data_entry(void *state, struct flow_key *key, uint32_t *hi, \
         }
     }
 
-    if (bucket_index == bucket_cap) { /* didn't find */
-        de = NULL;
-        if (bucket_index == BUCKET_SIZE) { // bucket is full!
-            bucket_index = -1;
-        }
-    } else
-        de = &(stats->dataentry_map[hash_index][bucket_index]);
+    /* need to create a new one but bucket is full */
+    if (bucket_index == bucket_cap && bucket_index == RE_BUCKET_SIZE) {
+        bucket_index = -1;
+    }
 
     *hi = hash_index;
     *bi = bucket_index;
@@ -117,17 +120,22 @@ static uint32_t get_pkt_seq(struct data_entry *de) {
         }
     }
 
+/*
     printf("ret: %u, new seq >>>>> ", ret);
     for (i = 0; i < PLANNED_SEQ_SIZE; i ++)
         printf("%u, ", de->planned_seqs[i]);
     printf("\n");
-
+    printf("buffer seq >>>>> ");
+    for (i = 0; i < BUFFERED_SEGS_SIZE; i ++)
+        printf("%u, ", de->buffered_segs[i].seq);
+    printf("\n");
+*/
     return ret;
 }
 
 int get_pktbuf_index() {
     int i;
-    for (i = 0; i < PKTBUF_SIZE; i ++)
+    for (i = 1; i < PKTBUF_SIZE; i ++)
         if (flag_pkt_buf[i] == false)
             return i;
     return -1;
@@ -148,18 +156,21 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 	num_out = num;
 	for (i = 0; i < num; i++) {
 		ipv4 = mtnf_pkt_ipv4_hdr(pkt[i]);
-        printf("packet arrived >>>>>>>>>>>>>>>>>>>>>>>>\n");
+        //printf("packet arrived >>>>>>>>>>>>>>>>>>>>>>>>\n");
 
         hash_index = 0;
         bucket_index = 0;
         fill_fkey(ipv4, &fkey);
-        get_data_entry(stats, &fkey, &hash_index, &bucket_index, dataentry);
+        get_data_entry(stats, &fkey, &hash_index, &bucket_index);
 
         uint32_t seq;
+        //printf("hash_i: %u, buck_i: %u\n", hash_index, bucket_index);
         /* if new flow and bucket not full, create new data entry */
-        if (dataentry == NULL && bucket_index >= 0) {
-            if (bucket_index >= 0)  {
-                printf("create new data entry>>>>>>>\n");
+        if (bucket_index >= 0) {
+            dataentry = &(stats->dataentry_map[hash_index][bucket_index]);
+            /* create new one */
+            if (bucket_index == stats->bucket_cnt[hash_index]) {
+                //printf("create new data entry>>>>>>>\n");
                 /* create new flow key*/
                 struct flow_key *tmp_key;
                 tmp_key = &(stats->flowkey_map[hash_index][bucket_index]);
@@ -170,7 +181,6 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                 tmp_key->proto = fkey.proto;
 
                 /* create new dataentry */
-                dataentry = &(stats->dataentry_map[hash_index][bucket_index]);
                 dataentry->next_expected_seq = 1;
                 dataentry->next_generated_seq = 1;
                 uint16_t j;
@@ -178,21 +188,17 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                     dataentry->planned_seqs[j] = dataentry->next_generated_seq;
                     dataentry->next_generated_seq ++;
                 }
-
-                seq = get_pkt_seq(dataentry);
-            } else {
-                seq = 0;
-                printf("bucket is full!!!!!!!\n");                
+                stats->bucket_cnt[hash_index] ++;
             }
-        } else {
             seq = get_pkt_seq(dataentry);
+        } else {
+            seq = 0;
         }
 
-
-        printf("seq: %u\n", seq);
+        //printf("seq: %u\n", seq);
         if (seq != 0) {
             if (seq == dataentry->next_expected_seq) {
-                printf("sequence equal! pulling-----\n");
+                //printf("sequence equal! pulling-----\n");
                 bool found_match = true;
                 while (found_match) {
                     int tmp_index;
@@ -201,7 +207,7 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                     for (tmp_index = 0; tmp_index < BUFFERED_SEGS_SIZE; tmp_index ++) {
                         if (dataentry->next_expected_seq == \
                             dataentry->buffered_segs[tmp_index].seq) {
-                            printf("%u ", dataentry->next_expected_seq);
+                            //printf("%u ", dataentry->next_expected_seq);
                             found_match = true;
                             dataentry->buffered_segs[tmp_index].seq = 0;
                             flag_pkt_buf[dataentry->buffered_segs[tmp_index].pktbuf_key] = false;
@@ -209,7 +215,7 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                         }
                     }
                 }
-                printf("\n");
+                //printf("\n");
             } else { /* save it in buffer */
                 struct udp_hdr *udp;
                 struct tcp_hdr *tcp;
@@ -243,8 +249,9 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                 }
 
                 int pktbuf_index =  get_pktbuf_index();
-                printf("pktbuf_index: %u, seg_index: %u, plen: %u\n", \
+                /*printf("pktbuf_index: %u, seg_index: %u, plen: %u\n", \
                     pktbuf_index, seg_index, plen);
+                */
                 if (plen <= PKTBUF_CAP && pktbuf_index > 0 && \
                     seg_index < BUFFERED_SEGS_SIZE) { 
                     /* if the packet is smaller than PKTBUFF_CAP 
