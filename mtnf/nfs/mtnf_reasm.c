@@ -2,9 +2,13 @@
 
 #define PKTBUF_SIZE 32 * 16
 #define PKTBUF_CAP 1518 // ??? not sure why use this, just copy S6's setting
-static double reorder_prob[5] = {0.128, 0.032, 0.008, 0.002, 0.0005};                                                   0.0005};
+static double my_reorder_prob[5] = {0.128, 0.032, 0.008, 0.002, 0.0005};
 static char global_pkt_buf[PKTBUF_SIZE][PKTBUF_CAP];
-static bool flag_pkt_buf[PKTBUF_SIZE][PKTBUF_CAP];
+static bool flag_pkt_buf[PKTBUF_SIZE];
+static uint16_t shift_8 = 1UL << 8;
+static uint32_t shift_16 = 1UL << 16;
+static uint64_t shift_32 = 1UL << 32;
+
 
 /* register tenant state */
 uint32_t
@@ -22,9 +26,8 @@ mtnf_reasm_init(void *state) {
     memset(stats->flowkey_map, 0, sizeof(struct flow_key) * BIG_PRIME * BUCKET_SIZE);
     memset(stats->dataentry_map, 0, sizeof(struct data_entry) * BIG_PRIME * BUCKET_SIZE);
     memset(stats->bucket_cnt, 0, sizeof(uint16_t) * BIG_PRIME);
-    memset(stat->buffered_segs, 0, sizeof(struct Segment) * BUFFERED_SEGS_SIZE);
     memset(global_pkt_buf, 0, sizeof(char) * PKTBUF_SIZE * PKTBUF_CAP);
-    memset(flag_pkt_buf, 0, sizeof(char) * PKTBUF_SIZE * PKTBUF_CAP);
+    memset(flag_pkt_buf, 0, sizeof(bool) * PKTBUF_SIZE);
 }
 
 static void fill_fkey(struct ipv4_hdr *ipv4, struct flow_key *f_key) {
@@ -59,21 +62,21 @@ static uint32_t hash_flowkey(struct flow_key *key) {
 }
 
 static void 
-get_data_entry(void *state, struct flow_key *key, uint32_t &hash_index, \
-            uint16_t &bucket_index, struct data_entry *de) {
+get_data_entry(void *state, struct flow_key *key, uint32_t *hi, \
+            uint16_t *bi, struct data_entry *de) {
     struct  reasm_statistics *stats = (struct reasm_statistics *)state;
-    struct flow_key &tmp_key;
-    uint16_t bucket_cap;
-    int i;
+    struct flow_key *tmp_key;
+    uint32_t hash_index;
+    uint16_t bucket_cap, bucket_index;
 
     hash_index = hash_flowkey(key);
     bucket_cap = stats->bucket_cnt[hash_index];
     
     for (bucket_index = 0; bucket_index < bucket_cap; bucket_index ++) {
-        tmp_key = stats->flowkey_map[hash_index][bucket_index];
-        if (tmp_key.src_ip == key->src_ip && tmp_key.dst_ip == key->dst_ip && \
-            tmp_key.src_port == key->src_port && tmp_key.dst_port == key->dst_port && \
-            tmp_key.proto  == key->proto) {
+        tmp_key = &(stats->flowkey_map[hash_index][bucket_index]);
+        if (tmp_key->src_ip == key->src_ip && tmp_key->dst_ip == key->dst_ip && \
+            tmp_key->src_port == key->src_port && tmp_key->dst_port == key->dst_port && \
+            tmp_key->proto  == key->proto) {
             break;
         }
     }
@@ -85,6 +88,9 @@ get_data_entry(void *state, struct flow_key *key, uint32_t &hash_index, \
         }
     } else
         de = &(stats->dataentry_map[hash_index][bucket_index]);
+
+    *hi = hash_index;
+    *bi = bucket_index;
 }
 
 static uint32_t get_pkt_seq(struct data_entry *de) {
@@ -101,7 +107,7 @@ static uint32_t get_pkt_seq(struct data_entry *de) {
     double dice = drand48();
     size_t diff;
     for (diff = 5; diff > 0; diff --) {
-        if (dice < reorder_prob[diff - 1]) {
+        if (dice < my_reorder_prob[diff - 1]) {
             uint32_t tmp_swap;
             int swap_index = rand() % (10 - diff);
             tmp_swap = de->planned_seqs[swap_index];
@@ -133,9 +139,9 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 	struct reasm_statistics *stats;
 	uint16_t i, num_out, bucket_index;
 	struct ipv4_hdr* ipv4;
-    struct flow_key *fkey;
+    struct flow_key fkey;
     uint32_t hash_index;
-    struct data_entry *dataentry;
+    struct data_entry *dataentry = NULL;
     srand(time(NULL));
 
 	stats = (struct reasm_statistics *)state;
@@ -146,8 +152,8 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
 
         hash_index = 0;
         bucket_index = 0;
-        fill_fkey(ipv4, fkey);
-        get_data_entry(stats, fkey, hash_index, bucket_index, dataentry);
+        fill_fkey(ipv4, &fkey);
+        get_data_entry(stats, &fkey, &hash_index, &bucket_index, dataentry);
 
         uint32_t seq;
         /* if new flow and bucket not full, create new data entry */
@@ -155,26 +161,24 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
             if (bucket_index >= 0)  {
                 printf("create new data entry>>>>>>>\n");
                 /* create new flow key*/
-                struct flow_key &tmp_key;
-                tmp_key = stats->flowkey_map[hash_index][bucket_index];
-                tmp_key.src_ip = fkey->src_ip;
-                tmp_key.dst_ip = fkey->dst_ip;
-                tmp_key.src_port = fkey->src_port;
-                tmp_key.dst_port = fkey->dst_port;
-                tmp_key.proto = fkey->proto;
+                struct flow_key *tmp_key;
+                tmp_key = &(stats->flowkey_map[hash_index][bucket_index]);
+                tmp_key->src_ip = fkey.src_ip;
+                tmp_key->dst_ip = fkey.dst_ip;
+                tmp_key->src_port = fkey.src_port;
+                tmp_key->dst_port = fkey.dst_port;
+                tmp_key->proto = fkey.proto;
 
                 /* create new dataentry */
-                struct data_entry &tmp_de;
-                tmp_de = stats->dataentry_map[hash_index][bucket_index];
-                tmp_de.next_expected_seq = 1;
-                tmp_de.next_generated_seq = 1;
+                dataentry = &(stats->dataentry_map[hash_index][bucket_index]);
+                dataentry->next_expected_seq = 1;
+                dataentry->next_generated_seq = 1;
                 uint16_t j;
                 for (j = 0; j < PLANNED_SEQ_SIZE; j ++) {
-                    tmp_de.planned_seqs[j] = tmp_de.next_generated_seq;
-                    tmp_de.next_generated_seq ++;
+                    dataentry->planned_seqs[j] = dataentry->next_generated_seq;
+                    dataentry->next_generated_seq ++;
                 }
 
-                dataentry = &(tmp_de);
                 seq = get_pkt_seq(dataentry);
             } else {
                 seq = 0;
@@ -195,11 +199,12 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                     found_match = false;
                     dataentry->next_expected_seq ++;
                     for (tmp_index = 0; tmp_index < BUFFERED_SEGS_SIZE; tmp_index ++) {
-                        if (dataentry->next_expected_seq == stats->buffered_segs[tmp_index].seq) {
+                        if (dataentry->next_expected_seq == \
+                            dataentry->buffered_segs[tmp_index].seq) {
                             printf("%u ", dataentry->next_expected_seq);
                             found_match = true;
-                            stats->buffered_segs[tmp_index].seq = 0;
-                            flag_pkt_buf[stats->buffered_segs[tmp_index].pktbuf_key] = false;
+                            dataentry->buffered_segs[tmp_index].seq = 0;
+                            flag_pkt_buf[dataentry->buffered_segs[tmp_index].pktbuf_key] = false;
                             break;
                         }
                     }
@@ -208,7 +213,7 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
             } else { /* save it in buffer */
                 struct udp_hdr *udp;
                 struct tcp_hdr *tcp;
-                uint16_t plen, hlen;
+                uint16_t plen = 0, hlen;
                 uint8_t *pkt_data, *eth, seg_index;
                 /* Check if we have a valid UDP packet */
                 udp = mtnf_pkt_udp_hdr(pkt[i]);
@@ -232,7 +237,7 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                 }
 
                 for (seg_index = 0; seg_index < BUFFERED_SEGS_SIZE; seg_index ++) {
-                    if (stats->buffered_segs[seg_index].seq == 0) {
+                    if (dataentry->buffered_segs[seg_index].seq == 0) {
                         break;
                     }
                 }
@@ -247,8 +252,8 @@ mtnf_reasm_handler(struct rte_mbuf *pkt[], uint16_t num, void *state) {
                     */
                     memcpy(global_pkt_buf[pktbuf_index], pkt_data, plen);
                     flag_pkt_buf[pktbuf_index] = true;
-                    stats->buffered_segs[seg_index].seq = seq;
-                    stats->buffered_segs[seg_index].pktbuf_key = pktbuf_index;
+                    dataentry->buffered_segs[seg_index].seq = seq;
+                    dataentry->buffered_segs[seg_index].pktbuf_key = pktbuf_index;
                 }
             }
         }

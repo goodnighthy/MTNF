@@ -9,6 +9,7 @@
 #include "mtnf_firewall.h"
 #include "mtnf_ids.h"
 #include "mtnf_nat.h"
+#include "mtnf_reasm.h"
 
 #include "mtnf_common.h"
 #include "mtnf_args.h"

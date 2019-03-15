@@ -10,7 +10,8 @@ void
 mtnf_states_init(void) {
 	uint16_t i;
 
-	state_length = mtnf_nat_register();
+	state_length = mtnf_reasm_register();
+//	state_length = mtnf_nat_register();
 //	state_length = mtnf_aes_encrypt_register();
 //	state_length = mtnf_ids_register();
 //	state_length = mtnf_firewall_register();
@@ -18,7 +19,8 @@ mtnf_states_init(void) {
 	states = memzone_reserve(MTNF_TENANT_STATE, state_length, tenant_number);
 
 	for (i = 0; i < tenant_number; i++) {
-		mtnf_nat_init((void *)((uint8_t *)states + state_length * i));
+		mtnf_reasm_init((void *)((uint8_t *)states + state_length * i));
+//		mtnf_nat_init((void *)((uint8_t *)states + state_length * i));
 //		mtnf_aes_encrypt_init((void *)((uint8_t *)states + state_length * i));
 //		mtnf_ids_init((void *)((uint8_t *)states + state_length * i));
 //		mtnf_firewall_init((void *)((uint8_t *)states + state_length * i));
@@ -37,7 +39,8 @@ mtnf_packets_handler(struct tenants_buffer *buffer, uint8_t id) {
 	tenant_lock[id] = true;
 
 	state = (void *)((uint8_t *)states + state_length * id);
-	nb_handler = mtnf_nat_handler(buffer->buffer_slot, buffer->num, state);
+	nb_handler = mtnf_reasm_handler(buffer->buffer_slot, buffer->num, state);
+//	nb_handler = mtnf_nat_handler(buffer->buffer_slot, buffer->num, state);
 //	nb_handler = mtnf_aes_encrypt_handler(buffer->buffer_slot, buffer->num, state);
 //	nb_handler = mtnf_ids_handler(buffer->buffer_slot, buffer->num, state);
 //	nb_handler = mtnf_firewall_handler(buffer->buffer_slot, buffer->num, state);
