@@ -1,0 +1,9 @@
+# .pcap
+*.pcap
+
+# vscode
+.vscode/*
+
+# pycache
+__pycache__/*
+*.pyc
