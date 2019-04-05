@@ -33,8 +33,8 @@ def read_file(tenant_name, time_name, dir_name, file_name):
 			lines = file.readlines()
 		for line in lines:
 			split_str = line.split()
-			addtodict2(tenant_name, split_str[2], split_str[0], int(split_str[1]))
-			addtodict2(time_name, split_str[0], split_str[2], int(split_str[1]))
+			addtodict2(tenant_name, split_str[3], split_str[0], int(split_str[1]))
+			addtodict2(time_name, split_str[0], split_str[3], int(split_str[1]))
 		# print(split_str[2], split_str[0], int(split_str[1]))
 	# print(tenant_dic)
 
@@ -57,7 +57,7 @@ def read_pcap(tenant_dic, time_dic, file_name):
 	for packet in PcapReader(file_name):
 		print("processing", i)
 		if 'IP' in packet:
-			ip = packet['IP'].src
+			ip = packet['IP'].dst
 			time_data = str(int(packet.time))
 			packet_len = len(packet)
 			addtodict2(tenant_dic, ip, time_data, packet_len)
@@ -91,6 +91,13 @@ def read_single_dir(file_name):
 # print cdf
 def parse_task_1and2(tenant_dic):
 	thres_cnt = 0
+	thres_3_cnt = 0
+	thres_5_cnt = 0
+	thres_10_cnt = 0
+	thres_20_cnt = 0
+	thres_30_cnt = 0
+	thres_50_cnt = 0
+	thres_whole_cnt = 0
 	whole_max_max = 0
 	whole_max_avg = 0
 	whole_max_sum = 0
@@ -111,6 +118,20 @@ def parse_task_1and2(tenant_dic):
 			traffic_timelist.append(int(time_data))
 			if traffic_max < traffic_val:
 				traffic_max = traffic_val
+
+		thres_whole_cnt = thres_whole_cnt + 1
+		if len(traffic_timelist) < 3:
+			thres_3_cnt = thres_3_cnt + 1
+		if len(traffic_timelist) < 5:
+			thres_5_cnt = thres_5_cnt + 1
+		if len(traffic_timelist) < 10:
+			thres_10_cnt = thres_10_cnt + 1
+		if len(traffic_timelist) < 20:
+			thres_20_cnt = thres_20_cnt + 1
+		if len(traffic_timelist) < 30:
+			thres_30_cnt = thres_30_cnt + 1
+		if len(traffic_timelist) < 50:
+			thres_50_cnt = thres_50_cnt + 1
 
 		if len(traffic_timelist) >= 20:
 			thres_cnt = thres_cnt + 1
@@ -201,6 +222,17 @@ def parse_task_1and2(tenant_dic):
 	write_to_file(max_xval, max_cdf_yval, "max.txt")
 	write_to_file(avg_xval, avg_cdf_yval, "avg.txt")
 
+	with open("tenant_data.txt", "a+") as f:
+		f.write("/data0/traffic/traffic_B/:\n")
+		f.write("lessthan_3: " + str(thres_3_cnt) + " ")
+		f.write("lessthan_5: " + str(thres_5_cnt) + " ")
+		f.write("lessthan_10: " + str(thres_10_cnt) + " ")
+		f.write("lessthan_20: " + str(thres_20_cnt) + " ")
+		f.write("lessthan_30: " + str(thres_30_cnt) + " ")
+		f.write("lessthan_50: " + str(thres_50_cnt) + " ")
+		f.write("task1and3_cnt: " + str(thres_whole_cnt) + " ")
+		f.write("task2_cnt: " + str(task2_cnt) + "\n")
+
 	return tenant_task_data
 
 # to prove that only few tenants' traffic reach its peek
@@ -239,16 +271,16 @@ def parse_task_3(time_dict, prev_data):
 def main():
 #	dir = './data/'
 #	dir = '/data0/traffic/traffic_A'
-#	dir = '/data0/traffic/traffic_B/'
+	dir = '/data0/traffic/traffic_B/'
 #	dir = '/data0/traffic/traffic_C'
 #	file_name = '/data0/traffic/baidu/new_idcebgw4_00018_20180110152913'
-	file_name = '/data0/equinix-chicago.dirA.20160121-125911.UTC.anon.pcap'
+#	file_name = '/data0/equinix-chicago.dirA.20160121-125911.UTC.anon.pcap'
 #	file_name = '/data0/equinix-chicago.dirB.20160121-135641.UTC.anon.pcap'
 #	dir = '/data0/traffic/baidu/'
-#	read_dir(dir)
+	read_dir(dir)
 #	read_pcap(file_name)
 #	read_pcap_dir(dir)
-	read_single_dir(file_name)
+#	read_single_dir(file_name)
 
 if __name__ == "__main__":
     main()
